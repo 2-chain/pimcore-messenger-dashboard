@@ -1,0 +1,3 @@
+twochain_messenger_dashboard:
+    resource: '@PimcoreMessengerDashboardBundle/Resources/config/routes.yaml'
+    prefix: ''

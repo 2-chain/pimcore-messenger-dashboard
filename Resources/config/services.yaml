@@ -1,0 +1,56 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    TwoChain\PimcoreMessengerDashboardBundle\:
+        resource: '../../*'
+        exclude:
+            - '../../{DependencyInjection,Resources,Tests,Entity,Migrations}'
+            - '../../PimcoreMessengerDashboardBundle.php'
+
+    TwoChain\PimcoreMessengerDashboardBundle\Installer:
+        public: true
+        arguments:
+            $bundle: "@=service('kernel').getBundle('PimcoreMessengerDashboardBundle')"
+
+    # Bind the recorder interface to the repository so the audit subscriber
+    # gets the right implementation injected. ServiceEntityRepository is
+    # autoconfigured as a service by doctrine-bundle.
+    TwoChain\PimcoreMessengerDashboardBundle\Service\StatsRecorderInterface:
+        alias: 'TwoChain\PimcoreMessengerDashboardBundle\Repository\StatsRecordRepository'
+
+    TwoChain\PimcoreMessengerDashboardBundle\EventSubscriber\MessengerAuditSubscriber:
+        arguments:
+            $enabled: '%twochain_messenger_dashboard.stats.enabled%'
+
+    TwoChain\PimcoreMessengerDashboardBundle\Command\PruneStatsCommand:
+        arguments:
+            $defaultRetentionDays: '%twochain_messenger_dashboard.stats.retention_days%'
+
+    TwoChain\PimcoreMessengerDashboardBundle\Service\TransportAdapterFactory:
+        arguments:
+            $receiverLocator: '@messenger.receiver_locator'
+
+    TwoChain\PimcoreMessengerDashboardBundle\Service\TransportRegistry:
+        arguments:
+            $receiverLocator: '@messenger.receiver_locator'
+
+    TwoChain\PimcoreMessengerDashboardBundle\Command\ListTransportsCommand: ~
+
+    TwoChain\PimcoreMessengerDashboardBundle\Controller\DashboardController:
+        public: true
+        autowire: true
+        autoconfigure: true
+        tags: ['controller.service_arguments']
+        arguments:
+            # Resolved at container-build time by
+            # ResolveFailedTransportNamePass — reads the framework's
+            # messenger.failure_transports.default alias target and exposes
+            # the bare transport name. Works for both the bundle's
+            # auto-configured pimcore_failed AND any project-supplied
+            # framework.messenger.failure_transport (e.g. pim_import_failed).
+            # null when nothing is configured; the failed/* endpoints
+            # respond with 404 in that case.
+            $failedTransportName: '%twochain_messenger_dashboard.failed_transport.name%'

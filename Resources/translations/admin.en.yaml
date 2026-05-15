@@ -1,0 +1,77 @@
+# English admin translations for the messenger dashboard bundle.
+#
+# Standard Symfony naming convention: <domain>.<locale>.yaml.
+# Loaded and seeded into Pimcore's translations_admin table by the bundle's
+# Installer. Flat keys (no nesting) because Pimcore's admin t() function
+# only understands flat keys.
+
+messenger_dashboard: Messenger Dashboard
+messenger_dashboard_transports: Transports
+messenger_dashboard_failed: Failed
+messenger_dashboard_home: Home
+messenger_dashboard_statistics: Statistics
+messenger_dashboard_intro_body: 'Inspect, search, requeue and purge messages across every Symfony Messenger transport configured for this Pimcore instance — without leaving the admin UI. Failed messages can be requeued individually or in bulk; statistics show throughput and the live backlog per transport.'
+messenger_dashboard_intro_readme: 'Read the full documentation on GitHub.'
+messenger_dashboard_statistics_subtitle: 'Throughput and live backlog per transport over the last days.'
+messenger_dashboard_stats_total: Total
+messenger_dashboard_select_left: 'Select an entry on the left to begin.'
+messenger_dashboard_no_listing: 'transport does not support listing messages.'
+messenger_dashboard_current_count: Current count
+messenger_dashboard_unavailable: unavailable
+messenger_dashboard_not_supported: not supported
+messenger_dashboard_pending: Pending
+messenger_dashboard_last_processed: Last processed
+
+messenger_dashboard_col_id: ID
+messenger_dashboard_col_message_class: Message class
+messenger_dashboard_col_created: Created
+messenger_dashboard_col_retries: Retries
+messenger_dashboard_col_class: Class
+messenger_dashboard_col_failure: Failure
+messenger_dashboard_col_message: Message
+messenger_dashboard_col_body: Body
+messenger_dashboard_col_failure_message: Failure message
+messenger_dashboard_col_in_queue: In queue
+messenger_dashboard_col_1d: '1 day (handled/failed)'
+messenger_dashboard_col_3d: '3 days (handled/failed)'
+messenger_dashboard_col_7d: '7 days (handled/failed)'
+
+messenger_dashboard_action_delete: Delete
+messenger_dashboard_action_requeue: Requeue
+messenger_dashboard_action_details: View details
+messenger_dashboard_filter_class_label: 'Filter by class:'
+messenger_dashboard_filter_all_classes: All classes
+messenger_dashboard_search_placeholder: 'Search...'
+messenger_dashboard_search_clear: Clear search
+messenger_dashboard_search_no_matches: 'No messages match your search.'
+
+messenger_dashboard_btn_delete_selected: Delete selected
+messenger_dashboard_btn_delete_selected_unsupported: 'Delete selected (unsupported)'
+messenger_dashboard_btn_delete_all_transport: Delete all in this transport
+messenger_dashboard_btn_delete_all_unsupported: 'Delete all (unsupported)'
+messenger_dashboard_btn_requeue_selected: Requeue selected
+messenger_dashboard_btn_requeue_all: Requeue all
+messenger_dashboard_btn_delete_all: Delete all
+
+messenger_dashboard_confirm_delete_message_title: 'Delete message?'
+messenger_dashboard_confirm_delete_message_body: 'Delete message {id}?'
+messenger_dashboard_confirm_delete_n_title: 'Delete {n} messages?'
+messenger_dashboard_confirm_cannot_undo: 'This cannot be undone.'
+messenger_dashboard_confirm_delete_all_title: 'Delete ALL messages in {transport}?'
+messenger_dashboard_confirm_delete_failed_title: 'Delete failed message?'
+messenger_dashboard_confirm_requeue_all_title: 'Requeue all failed messages?'
+messenger_dashboard_confirm_requeue_all_body: 'They will be sent back to their original transports.'
+messenger_dashboard_confirm_delete_all_failed_title: 'Delete ALL failed messages?'
+
+messenger_dashboard_notify_message_deleted: Message deleted
+messenger_dashboard_notify_message_requeued: Message requeued
+messenger_dashboard_notify_select_one: Select at least one message
+messenger_dashboard_notify_delete_summary: '{processed} deleted, {failed} failed'
+messenger_dashboard_notify_n_deleted: '{n} messages deleted'
+messenger_dashboard_notify_n_requeued: '{n} requeued'
+
+messenger_dashboard_loading_stats: 'Loading statistics…'
+messenger_dashboard_no_stats: 'No stats yet — dispatch some messages first.'
+
+messenger_dashboard_details_title: Message details
+messenger_dashboard_details_close: Close

@@ -1,0 +1,160 @@
+.twochain-empty {
+    padding: 24px;
+    text-align: center;
+    color: #888;
+    font-style: italic;
+}
+
+.twochain-section-header .x-tree-node-text {
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+}
+
+.twochain-section-header {
+    padding-top: 4px;
+    pointer-events: auto;
+    cursor: default;
+}
+
+.twochain-section-header .x-tree-icon {
+    display: none;
+}
+
+.twochain-section-header.x-grid-item-selected,
+.twochain-section-header.x-grid-item-focused {
+    background: transparent !important;
+}
+
+.twochain-stats-table tfoot .twochain-stats-total td {
+    border-top: 2px solid #c0c0c0;
+    background: #f7f7f7;
+    font-weight: 600;
+}
+
+.twochain-home-intro {
+    max-width: 760px;
+    margin-bottom: 24px;
+}
+
+.twochain-home-intro h2 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+}
+
+.twochain-home-intro p {
+    margin: 0 0 8px 0;
+    color: #444;
+    line-height: 1.5;
+}
+
+.twochain-home-intro a {
+    color: #2074a8;
+    text-decoration: none;
+}
+
+.twochain-home-intro a:hover {
+    text-decoration: underline;
+}
+
+.twochain-home-section {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.twochain-home-subtitle {
+    margin: 0 0 12px 0;
+    color: #888;
+    font-size: 12px;
+}
+
+.twochain-statsbar {
+    font-size: 12px;
+    color: #444;
+}
+
+.twochain-stats-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+}
+.twochain-stats-table th,
+.twochain-stats-table td {
+    border: 1px solid #d8d8db;
+    padding: 6px 10px;
+    text-align: left;
+}
+.twochain-stats-table thead th {
+    background: #f6f6f7;
+    font-weight: 600;
+}
+.twochain-stats-table tbody tr:nth-child(even) {
+    background: #fafafa;
+}
+
+.twochain-body-cell {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    color: #444;
+}
+
+/* Message detail popup */
+.twochain-detail-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 14px;
+}
+.twochain-detail-table th {
+    text-align: left;
+    padding: 4px 14px 4px 0;
+    width: 150px;
+    color: #666;
+    font-weight: 600;
+    vertical-align: top;
+    white-space: nowrap;
+}
+.twochain-detail-table td {
+    padding: 4px 0;
+    vertical-align: top;
+    word-break: break-word;
+}
+.twochain-detail-section h4 {
+    margin: 10px 0 6px 0;
+    font-size: 13px;
+    color: #333;
+}
+.twochain-body-pre {
+    background: #f6f6f7;
+    border: 1px solid #d8d8db;
+    border-radius: 3px;
+    padding: 10px 12px;
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #222;
+    overflow: auto;
+    max-height: 320px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.twochain-empty-inline {
+    color: #aaa;
+    font-style: italic;
+}
+
+/* Sidebar nodes for transports that don't support listing — visually
+   de-emphasized to reinforce the "sorted at the bottom" grouping. */
+.twochain-transport-unsupported .x-tree-node-text {
+    color: #888;
+}
+
+/* Statistics table row for an unsupported transport — muted, italic,
+   matches the empty-inline styling for visual consistency. */
+.twochain-stats-table tr.twochain-stats-unsupported td {
+    color: #888;
+}
+

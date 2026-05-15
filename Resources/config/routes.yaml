@@ -1,0 +1,3 @@
+twochain_messenger_dashboard_controllers:
+    resource: '../../Controller/'
+    type: attribute

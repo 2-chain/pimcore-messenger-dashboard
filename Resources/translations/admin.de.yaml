@@ -1,0 +1,72 @@
+# Deutsche Admin-Übersetzungen für das Messenger-Dashboard-Bundle.
+
+messenger_dashboard: Messenger Dashboard
+messenger_dashboard_transports: Transporte
+messenger_dashboard_failed: Fehlgeschlagen
+messenger_dashboard_home: Übersicht
+messenger_dashboard_statistics: Statistik
+messenger_dashboard_intro_body: 'Nachrichten aller in dieser Pimcore-Instanz konfigurierten Symfony-Messenger-Transporte einsehen, durchsuchen, erneut einreihen und löschen — direkt aus der Admin-Oberfläche. Fehlgeschlagene Nachrichten lassen sich einzeln oder gebündelt erneut einreihen; die Statistik zeigt Durchsatz und aktuelle Warteschlange je Transport.'
+messenger_dashboard_intro_readme: 'Vollständige Dokumentation auf GitHub lesen.'
+messenger_dashboard_statistics_subtitle: 'Durchsatz und aktueller Bestand je Transport über die letzten Tage.'
+messenger_dashboard_stats_total: Gesamt
+messenger_dashboard_select_left: 'Wählen Sie links einen Eintrag aus, um zu beginnen.'
+messenger_dashboard_no_listing: 'Transport unterstützt das Auflisten von Nachrichten nicht.'
+messenger_dashboard_current_count: Aktuelle Anzahl
+messenger_dashboard_unavailable: nicht verfügbar
+messenger_dashboard_not_supported: nicht unterstützt
+messenger_dashboard_pending: Ausstehend
+messenger_dashboard_last_processed: Zuletzt verarbeitet
+
+messenger_dashboard_col_id: ID
+messenger_dashboard_col_message_class: Nachrichtenklasse
+messenger_dashboard_col_created: Erstellt
+messenger_dashboard_col_retries: Wiederholungen
+messenger_dashboard_col_class: Klasse
+messenger_dashboard_col_failure: Fehler
+messenger_dashboard_col_message: Nachricht
+messenger_dashboard_col_body: Inhalt
+messenger_dashboard_col_failure_message: Fehlermeldung
+messenger_dashboard_col_in_queue: In Warteschlange
+messenger_dashboard_col_1d: '1 Tag (erfolgreich/fehlgeschlagen)'
+messenger_dashboard_col_3d: '3 Tage (erfolgreich/fehlgeschlagen)'
+messenger_dashboard_col_7d: '7 Tage (erfolgreich/fehlgeschlagen)'
+
+messenger_dashboard_action_delete: Löschen
+messenger_dashboard_action_requeue: Erneut einreihen
+messenger_dashboard_action_details: Details anzeigen
+messenger_dashboard_filter_class_label: 'Klasse filtern:'
+messenger_dashboard_filter_all_classes: Alle Klassen
+messenger_dashboard_search_placeholder: 'Suche...'
+messenger_dashboard_search_clear: Suche zurücksetzen
+messenger_dashboard_search_no_matches: 'Keine Nachrichten entsprechen Ihrer Suche.'
+
+messenger_dashboard_btn_delete_selected: Auswahl löschen
+messenger_dashboard_btn_delete_selected_unsupported: 'Auswahl löschen (nicht unterstützt)'
+messenger_dashboard_btn_delete_all_transport: Alle in diesem Transport löschen
+messenger_dashboard_btn_delete_all_unsupported: 'Alles löschen (nicht unterstützt)'
+messenger_dashboard_btn_requeue_selected: Auswahl erneut einreihen
+messenger_dashboard_btn_requeue_all: Alle erneut einreihen
+messenger_dashboard_btn_delete_all: Alle löschen
+
+messenger_dashboard_confirm_delete_message_title: 'Nachricht löschen?'
+messenger_dashboard_confirm_delete_message_body: 'Nachricht {id} löschen?'
+messenger_dashboard_confirm_delete_n_title: '{n} Nachrichten löschen?'
+messenger_dashboard_confirm_cannot_undo: 'Dies kann nicht rückgängig gemacht werden.'
+messenger_dashboard_confirm_delete_all_title: 'ALLE Nachrichten in {transport} löschen?'
+messenger_dashboard_confirm_delete_failed_title: 'Fehlgeschlagene Nachricht löschen?'
+messenger_dashboard_confirm_requeue_all_title: 'Alle fehlgeschlagenen Nachrichten erneut einreihen?'
+messenger_dashboard_confirm_requeue_all_body: 'Sie werden an ihre ursprünglichen Transporte zurückgesendet.'
+messenger_dashboard_confirm_delete_all_failed_title: 'ALLE fehlgeschlagenen Nachrichten löschen?'
+
+messenger_dashboard_notify_message_deleted: Nachricht gelöscht
+messenger_dashboard_notify_message_requeued: Nachricht wurde erneut eingereiht
+messenger_dashboard_notify_select_one: Wählen Sie mindestens eine Nachricht aus
+messenger_dashboard_notify_delete_summary: '{processed} gelöscht, {failed} fehlgeschlagen'
+messenger_dashboard_notify_n_deleted: '{n} Nachrichten gelöscht'
+messenger_dashboard_notify_n_requeued: '{n} erneut eingereiht'
+
+messenger_dashboard_loading_stats: 'Lade Statistiken…'
+messenger_dashboard_no_stats: 'Noch keine Statistiken — verarbeiten Sie zuerst einige Nachrichten.'
+
+messenger_dashboard_details_title: Nachrichtendetails
+messenger_dashboard_details_close: Schließen
