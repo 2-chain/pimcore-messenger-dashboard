@@ -225,7 +225,7 @@ class ListableReceiverAdapter implements TransportAdapterInterface
     protected function summarizeMessage(object $message): array
     {
         $out = [];
-        foreach ((new \ReflectionObject($message))->getProperties(\ReflectionProperty::IS_PUBLIC) as $prop) {
+        foreach ((new \ReflectionObject($message))->getProperties() as $prop) {
             if (!$prop->isInitialized($message)) {
                 continue;
             }
