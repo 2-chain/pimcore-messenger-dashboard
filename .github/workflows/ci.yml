@@ -134,6 +134,10 @@ jobs:
       - name: Run integration tests on MariaDB
         env:
           MESSENGER_DASHBOARD_TEST_DSN: pdo-mysql://testuser:testpw@127.0.0.1:3306/testdb
+          # CI's testdb container is ephemeral and explicitly for wiping.
+          # IntegrationTestCase normally refuses to drop tables in a DB
+          # whose name doesn't contain "test" as a safety guard.
+          MESSENGER_DASHBOARD_TEST_ALLOW_DESTRUCTIVE: '1'
         run: vendor/bin/phpunit --testsuite integration
 
   # ---------------------------------------------------------------------------

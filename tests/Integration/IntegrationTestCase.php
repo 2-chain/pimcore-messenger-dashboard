@@ -165,6 +165,7 @@ abstract class IntegrationTestCase extends TestCase
 
     private function dropManagedTables(): void
     {
+        $this->assertDestructiveOpsAllowed();
         foreach (['messenger_messages', 'messenger_dashboard_stats'] as $name) {
             try {
                 $this->conn->executeStatement('DROP TABLE IF EXISTS ' . $name);
@@ -172,6 +173,40 @@ abstract class IntegrationTestCase extends TestCase
                 // Connection may already be closed; ignore.
             }
         }
+    }
+
+    /**
+     * Refuse to run destructive schema operations against a connection
+     * that doesn't look like a test database. Without this guard, pointing
+     * MESSENGER_DASHBOARD_TEST_DSN at a dev/prod DSN by mistake would
+     * cause setUp/tearDown to DROP the bundle's `messenger_messages` and
+     * `messenger_dashboard_stats` tables — taking real data with them.
+     *
+     * SQLite is always safe (file-based or in-memory, owned by the test).
+     * MySQL/MariaDB/PostgreSQL connections must point at a database whose
+     * name contains "test" or set the explicit override env var.
+     */
+    private function assertDestructiveOpsAllowed(): void
+    {
+        if ($this->isSqlite()) {
+            return;
+        }
+        if (getenv('MESSENGER_DASHBOARD_TEST_ALLOW_DESTRUCTIVE') === '1') {
+            return;
+        }
+        $database = (string) $this->conn->getDatabase();
+        if (str_contains(strtolower($database), 'test')) {
+            return;
+        }
+
+        throw new RuntimeException(sprintf(
+            'Refusing destructive schema operations against database "%s" '
+            . 'because the name doesn\'t look test-shaped. Either point '
+            . 'MESSENGER_DASHBOARD_TEST_DSN at a dedicated test database '
+            . '(e.g. `db_test`) or set MESSENGER_DASHBOARD_TEST_ALLOW_DESTRUCTIVE=1 '
+            . 'to opt in (only if you really mean it).',
+            $database,
+        ));
     }
 
     /**
