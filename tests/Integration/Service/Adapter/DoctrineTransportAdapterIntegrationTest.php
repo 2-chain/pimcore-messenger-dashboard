@@ -59,6 +59,37 @@ final class DoctrineTransportAdapterIntegrationTest extends IntegrationTestCase
         $this->assertSame([SampleMessage::class, SampleMessage::class], $classes);
     }
 
+    public function testListPopulatesDescriptorIdFromDatabaseRow(): void
+    {
+        $this->transport->send(new Envelope(new SampleMessage('alpha')));
+        $this->transport->send(new Envelope(new SampleMessage('beta')));
+
+        $rowIds = $this->conn->fetchFirstColumn('SELECT id FROM messenger_messages ORDER BY id ASC');
+        $rowIds = array_map('strval', $rowIds);
+
+        $descriptors = $this->adapter->list(0, 50);
+        $descriptorIds = array_map(fn($d): string => $d->id, $descriptors);
+
+        $this->assertSame($rowIds, $descriptorIds);
+    }
+
+    public function testListPopulatesDescriptorIdEvenForEscapedBodies(): void
+    {
+        $this->conn->insert('messenger_messages', [
+            'body' => addslashes(serialize(new Envelope(new SampleMessage('escaped-id')))),
+            'headers' => '[]',
+            'queue_name' => self::TRANSPORT,
+            'created_at' => '2026-01-01 00:00:00',
+            'available_at' => '2026-01-01 00:00:00',
+        ]);
+        $rowId = (string) $this->conn->fetchOne('SELECT id FROM messenger_messages LIMIT 1');
+
+        $descriptors = $this->adapter->list(0, 50);
+
+        $this->assertCount(1, $descriptors);
+        $this->assertSame($rowId, $descriptors[0]->id);
+    }
+
     public function testCountReflectsPendingRows(): void
     {
         $this->transport->send(new Envelope(new SampleMessage('one')));

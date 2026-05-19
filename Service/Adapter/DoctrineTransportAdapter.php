@@ -134,6 +134,11 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
                 // crashing the whole page.
                 continue;
             }
+            // Symfony's DoctrineReceiver attaches a TransportMessageIdStamp
+            // carrying the DB row id when it returns envelopes; raw-body
+            // deserialization bypasses that, so the id has to be re-attached
+            // here or descriptors come back with id = "".
+            $envelope = $envelope->with(new TransportMessageIdStamp((string) $row['id']));
             $descriptors[] = $this->envelopeToDescriptor($envelope, $this->parseCreatedAt($row['created_at'] ?? null));
         }
 
@@ -185,7 +190,14 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
             return null;
         }
 
-        return BodyDeserializer::tryDeserialize($body);
+        $envelope = BodyDeserializer::tryDeserialize($body);
+        if (!$envelope instanceof Envelope) {
+            return null;
+        }
+
+        // See list() — raw-body deserialization doesn't carry the row id,
+        // so attach it explicitly to match the receiver's behavior.
+        return $envelope->with(new TransportMessageIdStamp($id));
     }
 
     #[Override]
