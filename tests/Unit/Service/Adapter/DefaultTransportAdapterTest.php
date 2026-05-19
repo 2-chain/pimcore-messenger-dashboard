@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Service\Adapter;
@@ -8,6 +9,7 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Transport\Receiver\MessageCountAwareInterface;
 use Symfony\Component\Messenger\Transport\Receiver\ReceiverInterface;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\DefaultTransportAdapter;
+use LogicException;
 
 final class DefaultTransportAdapterTest extends TestCase
 {
@@ -68,7 +70,7 @@ final class DefaultTransportAdapterTest extends TestCase
                     ? $adapter->$method('id')
                     : $adapter->$method();
                 $this->fail(sprintf('Expected LogicException from %s()', $method));
-            } catch (\LogicException $e) {
+            } catch (LogicException $e) {
                 $this->assertStringContainsString('queue_x', $e->getMessage(), $method);
             }
         }
@@ -82,33 +84,23 @@ final class NoopReceiver implements ReceiverInterface
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 }
 
 final class CountAwareReceiver implements ReceiverInterface, MessageCountAwareInterface
 {
-    public function __construct(private readonly int $count)
-    {
-    }
+    public function __construct(private readonly int $count) {}
 
     public function get(): iterable
     {
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 
     public function getMessageCount(): int
     {

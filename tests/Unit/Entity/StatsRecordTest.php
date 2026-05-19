@@ -1,10 +1,13 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Entity;
 
 use PHPUnit\Framework\TestCase;
 use TwoChain\PimcoreMessengerDashboardBundle\Entity\StatsRecord;
+use DateTimeImmutable;
+use RuntimeException;
 
 final class StatsRecordTest extends TestCase
 {
@@ -21,7 +24,7 @@ final class StatsRecordTest extends TestCase
         $this->assertNull($rec->getFailureMessage());
         $this->assertNull($rec->getId(), 'id is set by Doctrine on persist');
         $this->assertEqualsWithDelta(
-            (new \DateTimeImmutable())->getTimestamp(),
+            (new DateTimeImmutable())->getTimestamp(),
             $rec->getHandledAt()->getTimestamp(),
             2,
         );
@@ -34,12 +37,12 @@ final class StatsRecordTest extends TestCase
             'App\\Message\\X',
             durationMs: 50,
             retryCount: 3,
-            failureClass: \RuntimeException::class,
+            failureClass: RuntimeException::class,
             failureMessage: 'boom',
         );
 
         $this->assertSame(StatsRecord::STATUS_FAILED, $rec->getStatus());
-        $this->assertSame(\RuntimeException::class, $rec->getFailureClass());
+        $this->assertSame(RuntimeException::class, $rec->getFailureClass());
         $this->assertSame('boom', $rec->getFailureMessage());
         $this->assertSame(3, $rec->getRetryCount());
         $this->assertSame(50, $rec->getDurationMs());

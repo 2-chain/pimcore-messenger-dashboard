@@ -1,14 +1,19 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Service\Adapter;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\Envelope;
+use Symfony\Component\Messenger\Stamp\ErrorDetailsStamp;
 use Symfony\Component\Messenger\Stamp\TransportMessageIdStamp;
 use Symfony\Component\Messenger\Transport\Receiver\ListableReceiverInterface;
 use Symfony\Component\Messenger\Transport\Receiver\MessageCountAwareInterface;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\ListableReceiverAdapter;
+use InvalidArgumentException;
+use LogicException;
+use RuntimeException;
 
 final class ListableReceiverAdapterTest extends TestCase
 {
@@ -191,26 +196,88 @@ final class ListableReceiverAdapterTest extends TestCase
     {
         $adapter = new ListableReceiverAdapter('q', $this->stubReceiver([]));
 
-        $this->expectException(\LogicException::class);
+        $this->expectException(LogicException::class);
         $adapter->purge();
     }
 
-    /**
-     * Wraps the given messages in TransportMessageIdStamp'd envelopes and
-     * returns a minimal ListableReceiverInterface that yields them.
-     */
-    private function stubReceiver(array $messages): ListableReceiverInterface
+    public function testQueryMatchesAgainstFailureExceptionMessage(): void
     {
-        $envelopes = [];
-        $i = 1;
-        foreach ($messages as $message) {
-            $envelopes[] = (new Envelope($message))->with(new TransportMessageIdStamp((string) $i++));
-        }
+        $adapter = new ListableReceiverAdapter('failed', $this->stubReceiverWithEnvelopes([
+            (new Envelope(new OrderMessageStub('order-1')))
+                ->with(new TransportMessageIdStamp('1'))
+                ->with(new ErrorDetailsStamp(RuntimeException::class, 0, 'Connection refused by upstream')),
+            (new Envelope(new OrderMessageStub('order-2')))
+                ->with(new TransportMessageIdStamp('2'))
+                ->with(new ErrorDetailsStamp(RuntimeException::class, 0, 'Timeout after 30s')),
+        ]));
 
-        return new class($envelopes) implements ListableReceiverInterface {
-            public function __construct(private array $envelopes)
-            {
-            }
+        $result = $adapter->list(0, 50, 'Connection refused');
+
+        $this->assertCount(1, $result);
+        $this->assertSame('1', $result[0]->id);
+    }
+
+    public function testQueryMatchesAgainstFailureExceptionClass(): void
+    {
+        $adapter = new ListableReceiverAdapter('failed', $this->stubReceiverWithEnvelopes([
+            (new Envelope(new OrderMessageStub('order-1')))
+                ->with(new TransportMessageIdStamp('1'))
+                ->with(new ErrorDetailsStamp(InvalidArgumentException::class, 0, 'bad input')),
+            (new Envelope(new OrderMessageStub('order-2')))
+                ->with(new TransportMessageIdStamp('2'))
+                ->with(new ErrorDetailsStamp(RuntimeException::class, 0, 'something')),
+        ]));
+
+        $result = $adapter->list(0, 50, 'InvalidArgument');
+
+        $this->assertCount(1, $result);
+        $this->assertSame('1', $result[0]->id);
+    }
+
+    public function testFailureSearchUsesWildcardSemantics(): void
+    {
+        $adapter = new ListableReceiverAdapter('failed', $this->stubReceiverWithEnvelopes([
+            (new Envelope(new OrderMessageStub('a')))
+                ->with(new TransportMessageIdStamp('1'))
+                ->with(new ErrorDetailsStamp(RuntimeException::class, 0, 'SQLSTATE[23000]: integrity constraint')),
+            (new Envelope(new OrderMessageStub('b')))
+                ->with(new TransportMessageIdStamp('2'))
+                ->with(new ErrorDetailsStamp(RuntimeException::class, 0, 'something else')),
+        ]));
+
+        $result = $adapter->list(0, 50, 'SQLSTATE%integrity');
+
+        $this->assertCount(1, $result);
+    }
+
+    public function testCountListableIncludesFailureMessageMatches(): void
+    {
+        $adapter = new ListableReceiverAdapter('failed', $this->stubReceiverWithEnvelopes([
+            (new Envelope(new OrderMessageStub('a')))
+                ->with(new TransportMessageIdStamp('1'))
+                ->with(new ErrorDetailsStamp(RuntimeException::class, 0, 'boom')),
+            (new Envelope(new OrderMessageStub('b')))
+                ->with(new TransportMessageIdStamp('2'))
+                ->with(new ErrorDetailsStamp(RuntimeException::class, 0, 'boom again')),
+            (new Envelope(new OrderMessageStub('c')))
+                ->with(new TransportMessageIdStamp('3'))
+                ->with(new ErrorDetailsStamp(RuntimeException::class, 0, 'fine')),
+        ]));
+
+        $this->assertSame(2, $adapter->countListable('boom'));
+    }
+
+    /**
+     * Like stubReceiver but accepts pre-built envelopes (so the test can
+     * attach ErrorDetailsStamp before the envelope is handed to the adapter).
+     *
+     * @param list<Envelope> $envelopes
+     */
+    private function stubReceiverWithEnvelopes(array $envelopes): ListableReceiverInterface
+    {
+        return new class ($envelopes) implements ListableReceiverInterface {
+            /** @param list<Envelope> $envelopes */
+            public function __construct(private readonly array $envelopes) {}
 
             public function all(?int $limit = null): iterable
             {
@@ -234,36 +301,69 @@ final class ListableReceiverAdapterTest extends TestCase
                 return [];
             }
 
-            public function ack(Envelope $envelope): void
+            public function ack(Envelope $envelope): void {}
+
+            public function reject(Envelope $envelope): void {}
+        };
+    }
+
+    /**
+     * Wraps the given messages in TransportMessageIdStamp'd envelopes and
+     * returns a minimal ListableReceiverInterface that yields them.
+     */
+    private function stubReceiver(array $messages): ListableReceiverInterface
+    {
+        $envelopes = [];
+        $i = 1;
+        foreach ($messages as $message) {
+            $envelopes[] = (new Envelope($message))->with(new TransportMessageIdStamp((string) $i++));
+        }
+
+        return new class ($envelopes) implements ListableReceiverInterface {
+            public function __construct(private array $envelopes) {}
+
+            public function all(?int $limit = null): iterable
             {
+                return $limit === null ? $this->envelopes : array_slice($this->envelopes, 0, $limit);
             }
 
-            public function reject(Envelope $envelope): void
+            public function find(mixed $id): ?Envelope
             {
+                foreach ($this->envelopes as $e) {
+                    $stamp = $e->last(TransportMessageIdStamp::class);
+                    if ($stamp !== null && (string) $stamp->getId() === (string) $id) {
+                        return $e;
+                    }
+                }
+
+                return null;
             }
+
+            public function get(): iterable
+            {
+                return [];
+            }
+
+            public function ack(Envelope $envelope): void {}
+
+            public function reject(Envelope $envelope): void {}
         };
     }
 }
 
 final class OrderMessageStub
 {
-    public function __construct(public readonly string $orderId)
-    {
-    }
+    public function __construct(public readonly string $orderId) {}
 }
 
 final class ShipmentMessageStub
 {
-    public function __construct(public readonly string $shipmentId)
-    {
-    }
+    public function __construct(public readonly string $shipmentId) {}
 }
 
 final class CountingListableReceiver implements ListableReceiverInterface, MessageCountAwareInterface
 {
-    public function __construct(private readonly int $count)
-    {
-    }
+    public function __construct(private readonly int $count) {}
 
     public function all(?int $limit = null): iterable
     {
@@ -280,13 +380,9 @@ final class CountingListableReceiver implements ListableReceiverInterface, Messa
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 
     public function getMessageCount(): int
     {
@@ -300,9 +396,7 @@ final class RecordingListableReceiver implements ListableReceiverInterface
     public array $rejected = [];
 
     /** @param list<Envelope> $envelopes */
-    public function __construct(private readonly array $envelopes)
-    {
-    }
+    public function __construct(private readonly array $envelopes) {}
 
     public function all(?int $limit = null): iterable
     {
@@ -326,9 +420,7 @@ final class RecordingListableReceiver implements ListableReceiverInterface
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
     public function reject(Envelope $envelope): void
     {

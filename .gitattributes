@@ -10,6 +10,12 @@
 /phpunit.xml.dist   export-ignore
 /.phpunit.cache     export-ignore
 
+# Dev-tooling configs and their caches — only meaningful when developing
+# the bundle, never run inside vendor/.
+/phpstan.neon.dist  export-ignore
+/.php-cs-fixer.dist.php  export-ignore
+/.php-cs-fixer.cache     export-ignore
+
 # Repo metadata that has no value inside vendor/.
 /.gitignore         export-ignore
 /.gitattributes     export-ignore

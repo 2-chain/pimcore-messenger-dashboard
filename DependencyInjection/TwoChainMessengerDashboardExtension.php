@@ -9,10 +9,11 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
+use Override;
 
 final class TwoChainMessengerDashboardExtension extends Extension implements PrependExtensionInterface
 {
-    #[\Override]
+    #[Override]
     public function load(array $configs, ContainerBuilder $container): void
     {
         $config = $this->processConfiguration(new Configuration(), $configs);
@@ -30,7 +31,7 @@ final class TwoChainMessengerDashboardExtension extends Extension implements Pre
      * Registers the bundle's Doctrine migrations path with the host project's
      * doctrine_migrations config. Mirrors the pattern used by pimcore/data-hub.
      */
-    #[\Override]
+    #[Override]
     public function prepend(ContainerBuilder $container): void
     {
         $loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
@@ -91,7 +92,7 @@ final class TwoChainMessengerDashboardExtension extends Extension implements Pre
         ]);
     }
 
-    #[\Override]
+    #[Override]
     public function getAlias(): string
     {
         return 'twochain_messenger_dashboard';

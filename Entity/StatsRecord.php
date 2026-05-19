@@ -6,6 +6,7 @@ namespace TwoChain\PimcoreMessengerDashboardBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
 use TwoChain\PimcoreMessengerDashboardBundle\Repository\StatsRecordRepository;
+use DateTimeImmutable;
 
 #[ORM\Entity(repositoryClass: StatsRecordRepository::class)]
 #[ORM\Table(name: 'messenger_dashboard_stats')]
@@ -29,7 +30,7 @@ class StatsRecord
     private ?string $id = null;
 
     #[ORM\Column(name: 'handled_at', type: 'datetime_immutable')]
-    private \DateTimeImmutable $handledAt;
+    private DateTimeImmutable $handledAt;
 
     #[ORM\Column(name: 'duration_ms', type: 'integer', nullable: true, options: ['unsigned' => true])]
     private ?int $durationMs = null;
@@ -44,11 +45,11 @@ class StatsRecord
     private ?string $failureMessage = null;
 
     private function __construct(#[ORM\Column(type: 'string', length: 190)]
-    private string $transport, #[ORM\Column(name: 'message_class', type: 'string', length: 255)]
-    private string $messageClass, #[ORM\Column(type: 'string', length: 16)]
-    private string $status)
+        private string $transport, #[ORM\Column(name: 'message_class', type: 'string', length: 255)]
+        private string $messageClass, #[ORM\Column(type: 'string', length: 16)]
+        private string $status)
     {
-        $this->handledAt = new \DateTimeImmutable();
+        $this->handledAt = new DateTimeImmutable();
     }
 
     public static function handled(
@@ -103,7 +104,7 @@ class StatsRecord
         return $this->status;
     }
 
-    public function getHandledAt(): \DateTimeImmutable
+    public function getHandledAt(): DateTimeImmutable
     {
         return $this->handledAt;
     }

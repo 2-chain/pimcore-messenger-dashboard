@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Repository;
@@ -9,6 +10,7 @@ use PHPUnit\Framework\TestCase;
 use TwoChain\PimcoreMessengerDashboardBundle\Entity\StatsRecord;
 use TwoChain\PimcoreMessengerDashboardBundle\Repository\StatsRecordRepository;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\StatsRecorderInterface;
+use DateTimeImmutable;
 
 /**
  * Repository methods that hit raw SQL are exercised here against PHPUnit
@@ -47,7 +49,7 @@ final class StatsRecordRepositoryTest extends TestCase
         $repo = new TestableRepository();
         $repo->setEntityManager($em);
 
-        $total = $repo->prune(new \DateTimeImmutable('2026-01-01 00:00:00'), batchSize: 10000);
+        $total = $repo->prune(new DateTimeImmutable('2026-01-01 00:00:00'), batchSize: 10000);
 
         $this->assertSame(21234, $total);
     }
@@ -61,7 +63,7 @@ final class StatsRecordRepositoryTest extends TestCase
         $repo = new TestableRepository();
         $repo->setEntityManager($em);
 
-        $this->assertSame(0, $repo->prune(new \DateTimeImmutable()));
+        $this->assertSame(0, $repo->prune(new DateTimeImmutable()));
     }
 
     public function testPruneInlinesBatchSizeInSql(): void
@@ -77,7 +79,7 @@ final class StatsRecordRepositoryTest extends TestCase
 
         $repo = new TestableRepository();
         $repo->setEntityManager($em);
-        $repo->prune(new \DateTimeImmutable(), batchSize: 2500);
+        $repo->prune(new DateTimeImmutable(), batchSize: 2500);
 
         $this->assertStringContainsString('LIMIT 2500', $captured);
     }
@@ -91,7 +93,7 @@ final class StatsRecordRepositoryTest extends TestCase
         $repo = new TestableRepository();
         $repo->setEntityManager($em);
 
-        $this->assertSame(42, $repo->countOlderThan(new \DateTimeImmutable()));
+        $this->assertSame(42, $repo->countOlderThan(new DateTimeImmutable()));
     }
 
     public function testLastHandledAtReturnsImmutableDate(): void
@@ -105,7 +107,7 @@ final class StatsRecordRepositoryTest extends TestCase
 
         $date = $repo->lastHandledAt('pim_core');
 
-        $this->assertInstanceOf(\DateTimeImmutable::class, $date);
+        $this->assertInstanceOf(DateTimeImmutable::class, $date);
         $this->assertSame('2026-05-19 12:00:00', $date->format('Y-m-d H:i:s'));
     }
 
@@ -145,7 +147,7 @@ final class StatsRecordRepositoryTest extends TestCase
         $repo = new TestableRepository();
         $repo->setEntityManager($em);
 
-        $result = $repo->countSplit('pim_core', new \DateTimeImmutable('-1 hour'));
+        $result = $repo->countSplit('pim_core', new DateTimeImmutable('-1 hour'));
 
         $this->assertSame(['handled' => 125, 'failed' => 3], $result);
     }
@@ -162,7 +164,7 @@ final class StatsRecordRepositoryTest extends TestCase
         $repo = new TestableRepository();
         $repo->setEntityManager($em);
 
-        $this->assertSame(['handled' => 5, 'failed' => 0], $repo->countSplit('t', new \DateTimeImmutable()));
+        $this->assertSame(['handled' => 5, 'failed' => 0], $repo->countSplit('t', new DateTimeImmutable()));
     }
 
     public function testCountSplitDefaultsZeroWhenNoRows(): void
@@ -174,7 +176,7 @@ final class StatsRecordRepositoryTest extends TestCase
         $repo = new TestableRepository();
         $repo->setEntityManager($em);
 
-        $this->assertSame(['handled' => 0, 'failed' => 0], $repo->countSplit('t', new \DateTimeImmutable()));
+        $this->assertSame(['handled' => 0, 'failed' => 0], $repo->countSplit('t', new DateTimeImmutable()));
     }
 
     private function emWithConnection(Connection $conn): EntityManagerInterface

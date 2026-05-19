@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel any in-progress run on the same branch / PR when a new commit lands.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Static analysis + code style. Runs first because it's fast and catches
+  # most regressions before the (heavier) test jobs even start.
+  # ---------------------------------------------------------------------------
+  quality:
+    name: Static analysis + code style
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          # Single PHP version is enough — PHPStan and PHP-CS-Fixer analyze
+          # source code, not runtime behavior.
+          php-version: '8.3'
+          extensions: bcmath, exif, gd, intl, pdo_mysql, pdo_sqlite, redis, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          composer-options: --prefer-dist --no-progress
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --no-progress --error-format=github
+
+      - name: PHP-CS-Fixer (dry-run)
+        # Don't autofix in CI — surface the diff so the contributor knows
+        # to run `vendor/bin/php-cs-fixer fix` locally.
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff --show-progress=none
+
+  # ---------------------------------------------------------------------------
+  # SQLite matrix: unit + integration + functional, across all supported PHP
+  # versions. SQLite is the integration suite's default driver and what the
+  # functional suite always uses, so this covers ~96% of test surface area
+  # with zero external infrastructure.
+  # ---------------------------------------------------------------------------
+  test:
+    name: PHP ${{ matrix.php }} / ${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+        suite: [unit, integration, functional]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          # Pimcore's runtime deps pull in these extensions via composer
+          # platform checks. List them explicitly so composer install
+          # doesn't bail.
+          extensions: bcmath, exif, gd, intl, pdo_mysql, pdo_sqlite, redis, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          composer-options: --prefer-dist --no-progress
+
+      - name: Run ${{ matrix.suite }} tests
+        run: vendor/bin/phpunit --testsuite ${{ matrix.suite }}
+
+  # ---------------------------------------------------------------------------
+  # MariaDB integration tests: re-runs the integration suite against a real
+  # MariaDB 10.11 service container. Catches MariaDB-specific SQL issues
+  # (e.g. ESCAPE placement, string-literal backslash handling) that SQLite is
+  # too permissive to surface.
+  # ---------------------------------------------------------------------------
+  test-mariadb:
+    name: Integration tests (MariaDB ${{ matrix.mariadb }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Match the versions the bundle's README claims support for.
+        mariadb: ['10.11', '11.4']
+    services:
+      mariadb:
+        image: mariadb:${{ matrix.mariadb }}
+        env:
+          MARIADB_ROOT_PASSWORD: rootpw
+          MARIADB_DATABASE: testdb
+          MARIADB_USER: testuser
+          MARIADB_PASSWORD: testpw
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          # Single PHP version is enough — we're checking SQL-dialect
+          # behavior, not PHP version compatibility.
+          php-version: '8.3'
+          extensions: bcmath, exif, gd, intl, pdo_mysql, pdo_sqlite, redis, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          composer-options: --prefer-dist --no-progress
+
+      - name: Run integration tests on MariaDB
+        env:
+          MESSENGER_DASHBOARD_TEST_DSN: pdo-mysql://testuser:testpw@127.0.0.1:3306/testdb
+        run: vendor/bin/phpunit --testsuite integration
+
+  # ---------------------------------------------------------------------------
+  # Aggregator job: a single green check for branch protection to require.
+  # Without this, branch protection would need to list every matrix entry
+  # individually (9 SQLite × 2 MariaDB = 11 separate check names).
+  #
+  # The job always runs (via `if: always()`) so it can fail explicitly when
+  # any required upstream job didn't succeed — that's what makes it a
+  # reliable required check.
+  # ---------------------------------------------------------------------------
+  ci-passed:
+    name: All required checks passed
+    runs-on: ubuntu-latest
+    needs: [quality, test, test-mariadb]
+    if: always()
+    steps:
+      - name: Verify upstream jobs succeeded
+        run: |
+          if [[ "${{ needs.quality.result }}" != "success" ]]; then
+            echo "::error::Quality checks (PHPStan + PHP-CS-Fixer) did not succeed (result: ${{ needs.quality.result }})"
+            exit 1
+          fi
+          if [[ "${{ needs.test.result }}" != "success" ]]; then
+            echo "::error::SQLite matrix tests did not succeed (result: ${{ needs.test.result }})"
+            exit 1
+          fi
+          if [[ "${{ needs.test-mariadb.result }}" != "success" ]]; then
+            echo "::error::MariaDB integration tests did not succeed (result: ${{ needs.test-mariadb.result }})"
+            exit 1
+          fi
+          echo "All required checks passed."

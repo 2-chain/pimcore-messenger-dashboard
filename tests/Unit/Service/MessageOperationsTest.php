@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Service;
@@ -16,6 +17,10 @@ use TwoChain\PimcoreMessengerDashboardBundle\Service\MessageOperations;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\TransportAdapterFactory;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\TransportRegistry;
 use TwoChain\PimcoreMessengerDashboardBundle\Stamp\DashboardRequeueCountStamp;
+use DateTimeImmutable;
+use RuntimeException;
+use Throwable;
+use stdClass;
 
 final class MessageOperationsTest extends TestCase
 {
@@ -51,7 +56,7 @@ final class MessageOperationsTest extends TestCase
         $adapter = new StubAdapter('q', Capabilities::full());
         $adapter->deleteCallback = function (string $id): bool {
             if ($id === 'boom') {
-                throw new \RuntimeException('db connection lost');
+                throw new RuntimeException('db connection lost');
             }
 
             return true;
@@ -79,7 +84,7 @@ final class MessageOperationsTest extends TestCase
     public function testPurgeReportsErrorWhenAdapterThrows(): void
     {
         $adapter = new StubAdapter('q', Capabilities::full());
-        $adapter->purgeException = new \RuntimeException('connection down');
+        $adapter->purgeException = new RuntimeException('connection down');
         $ops = $this->ops($adapter);
 
         $result = $ops->purge('q');
@@ -102,7 +107,7 @@ final class MessageOperationsTest extends TestCase
     public function testRequeueDispatchesEnvelopeToOriginalTransport(): void
     {
         $bus = new RecordingBus();
-        $envelope = (new Envelope(new \stdClass()))
+        $envelope = (new Envelope(new stdClass()))
             ->with(new SentToFailureTransportStamp('pim_import'));
 
         $failed = new StubAdapter('pim_failed', Capabilities::full());
@@ -127,7 +132,7 @@ final class MessageOperationsTest extends TestCase
     public function testRequeueIncrementsDashboardCountStamp(): void
     {
         $bus = new RecordingBus();
-        $envelope = (new Envelope(new \stdClass()))
+        $envelope = (new Envelope(new stdClass()))
             ->with(new SentToFailureTransportStamp('pim_import'))
             ->with(new DashboardRequeueCountStamp(2));
 
@@ -146,7 +151,7 @@ final class MessageOperationsTest extends TestCase
     public function testRequeueAddsDefaultBusNameWhenMissing(): void
     {
         $bus = new RecordingBus();
-        $envelope = (new Envelope(new \stdClass()))
+        $envelope = (new Envelope(new stdClass()))
             ->with(new SentToFailureTransportStamp('pim_import'));
 
         $failed = new StubAdapter('pim_failed', Capabilities::full());
@@ -164,7 +169,7 @@ final class MessageOperationsTest extends TestCase
     public function testRequeuePreservesExistingBusNameStamp(): void
     {
         $bus = new RecordingBus();
-        $envelope = (new Envelope(new \stdClass()))
+        $envelope = (new Envelope(new stdClass()))
             ->with(new SentToFailureTransportStamp('pim_import'))
             ->with(new BusNameStamp('custom.bus'));
 
@@ -211,11 +216,11 @@ final class MessageOperationsTest extends TestCase
     {
         $bus = new RecordingBus();
         $failed = new StubAdapter('pim_failed', Capabilities::full());
-        $env1 = (new Envelope(new \stdClass()))->with(new SentToFailureTransportStamp('original'));
-        $env2 = (new Envelope(new \stdClass()))->with(new SentToFailureTransportStamp('original'));
+        $env1 = (new Envelope(new stdClass()))->with(new SentToFailureTransportStamp('original'));
+        $env2 = (new Envelope(new stdClass()))->with(new SentToFailureTransportStamp('original'));
         $failed->listResults = [
-            new MessageDescriptor(id: 'id-1', messageClass: 'A', createdAt: new \DateTimeImmutable()),
-            new MessageDescriptor(id: 'id-2', messageClass: 'B', createdAt: new \DateTimeImmutable()),
+            new MessageDescriptor(id: 'id-1', messageClass: 'A', createdAt: new DateTimeImmutable()),
+            new MessageDescriptor(id: 'id-2', messageClass: 'B', createdAt: new DateTimeImmutable()),
         ];
         $failed->findEnvelopeResults = ['id-1' => $env1, 'id-2' => $env2];
         $failed->deleteResults = ['id-1' => true, 'id-2' => true];
@@ -252,7 +257,7 @@ final class StubAdapter implements TransportAdapterInterface
     /** @var ?callable */
     public $deleteCallback = null;
     public int $purgeResult = 0;
-    public ?\Throwable $purgeException = null;
+    public ?Throwable $purgeException = null;
     /** @var array<string, Envelope> */
     public array $findEnvelopeResults = [];
     /** @var list<MessageDescriptor> */
@@ -261,8 +266,7 @@ final class StubAdapter implements TransportAdapterInterface
     public function __construct(
         private readonly string $name,
         private readonly Capabilities $capabilities,
-    ) {
-    }
+    ) {}
 
     public function name(): string
     {

@@ -19,7 +19,5 @@ use Symfony\Component\Messenger\Stamp\StampInterface;
  */
 final readonly class DashboardRequeueCountStamp implements StampInterface
 {
-    public function __construct(public int $count)
-    {
-    }
+    public function __construct(public int $count) {}
 }

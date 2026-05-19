@@ -8,6 +8,8 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use TwoChain\PimcoreMessengerDashboardBundle\Entity\StatsRecord;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\StatsRecorderInterface;
+use DateTimeImmutable;
+use Override;
 
 /**
  * @extends ServiceEntityRepository<StatsRecord>
@@ -19,7 +21,7 @@ class StatsRecordRepository extends ServiceEntityRepository implements StatsReco
         parent::__construct($registry, StatsRecord::class);
     }
 
-    #[\Override]
+    #[Override]
     public function record(StatsRecord $rec): void
     {
         $em = $this->getEntityManager();
@@ -31,7 +33,7 @@ class StatsRecordRepository extends ServiceEntityRepository implements StatsReco
      * Count rows with handled_at < $before. Used by the prune command's
      * --dry-run path.
      */
-    public function countOlderThan(\DateTimeImmutable $before): int
+    public function countOlderThan(DateTimeImmutable $before): int
     {
         return (int) $this->getEntityManager()->getConnection()->fetchOne(
             'SELECT COUNT(*) FROM messenger_dashboard_stats WHERE handled_at < ?',
@@ -43,7 +45,7 @@ class StatsRecordRepository extends ServiceEntityRepository implements StatsReco
      * Bulk delete rows with handled_at < $before, in batches.
      * Returns total rows deleted.
      */
-    public function prune(\DateTimeImmutable $before, int $batchSize = 10000): int
+    public function prune(DateTimeImmutable $before, int $batchSize = 10000): int
     {
         $conn = $this->getEntityManager()->getConnection();
         $total = 0;
@@ -64,7 +66,7 @@ class StatsRecordRepository extends ServiceEntityRepository implements StatsReco
      * Most recent handled_at for the given transport, regardless of status.
      * Returns null if no records exist for the transport.
      */
-    public function lastHandledAt(string $transport): ?\DateTimeImmutable
+    public function lastHandledAt(string $transport): ?DateTimeImmutable
     {
         $row = $this->getEntityManager()->getConnection()->fetchOne(
             'SELECT MAX(handled_at) FROM messenger_dashboard_stats WHERE transport = ?',
@@ -74,7 +76,7 @@ class StatsRecordRepository extends ServiceEntityRepository implements StatsReco
             return null;
         }
 
-        return new \DateTimeImmutable((string) $row);
+        return new DateTimeImmutable((string) $row);
     }
 
     /**
@@ -82,7 +84,7 @@ class StatsRecordRepository extends ServiceEntityRepository implements StatsReco
      *
      * @return array{handled: int, failed: int}
      */
-    public function countSplit(string $transport, \DateTimeImmutable $since): array
+    public function countSplit(string $transport, DateTimeImmutable $since): array
     {
         $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
             'SELECT status, COUNT(*) AS n FROM messenger_dashboard_stats

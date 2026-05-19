@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter;
 
 use Symfony\Component\Messenger\Envelope;
+use RuntimeException;
 
 /**
  * One adapter per configured Symfony Messenger transport. Implementations
@@ -24,7 +25,7 @@ interface TransportAdapterInterface
     public function capabilities(): Capabilities;
 
     /**
-     * @throws \RuntimeException if the transport's underlying backend is
+     * @throws RuntimeException if the transport's underlying backend is
      *                           unreachable (Redis down, AMQP broker offline, etc.)
      */
     public function count(): int;

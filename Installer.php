@@ -6,6 +6,7 @@ namespace TwoChain\PimcoreMessengerDashboardBundle;
 
 use Pimcore\Db;
 use Pimcore\Extension\Bundle\Installer\SettingsStoreAwareInstaller;
+use Override;
 
 final class Installer extends SettingsStoreAwareInstaller
 {
@@ -24,13 +25,13 @@ final class Installer extends SettingsStoreAwareInstaller
         'messenger_dashboard_edit',
     ];
 
-    #[\Override]
+    #[Override]
     public function needsReloadAfterInstall(): bool
     {
         return true;
     }
 
-    #[\Override]
+    #[Override]
     public function install(): void
     {
         $db = Db::get();
@@ -46,7 +47,7 @@ final class Installer extends SettingsStoreAwareInstaller
         parent::install();
     }
 
-    #[\Override]
+    #[Override]
     public function uninstall(): void
     {
         $db = Db::get();

@@ -10,6 +10,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\BusNameStamp;
 use Symfony\Component\Messenger\Stamp\SentToFailureTransportStamp;
 use Symfony\Component\Messenger\Stamp\TransportNamesStamp;
+use Throwable;
 
 /**
  * High-level bulk and requeue operations layered on top of the transport
@@ -25,8 +26,7 @@ class MessageOperations
     public function __construct(
         private readonly TransportRegistry $registry,
         private readonly MessageBusInterface $bus,
-    ) {
-    }
+    ) {}
 
     /**
      * @param list<string> $ids
@@ -37,7 +37,7 @@ class MessageOperations
         $adapter = $this->registry->adapter($transportName);
         if (!$adapter->capabilities()->canDeleteIndividual) {
             return ['processed' => 0, 'failed' => array_map(
-                fn (string $id): array => ['id' => $id, 'reason' => 'transport_does_not_support_delete'],
+                fn(string $id): array => ['id' => $id, 'reason' => 'transport_does_not_support_delete'],
                 $ids,
             )];
         }
@@ -51,7 +51,7 @@ class MessageOperations
                 } else {
                     $failed[] = ['id' => $id, 'reason' => 'message_not_found'];
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $failed[] = ['id' => $id, 'reason' => $e->getMessage()];
             }
         }
@@ -70,7 +70,7 @@ class MessageOperations
             $count = $adapter->purge();
 
             return ['processed' => $count, 'failed' => []];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return ['processed' => 0, 'failed' => [['id' => '*', 'reason' => $e->getMessage()]]];
         }
     }
@@ -86,7 +86,7 @@ class MessageOperations
             return [
                 'processed' => 0,
                 'failed' => array_map(
-                    static fn (string $id): array => ['id' => $id, 'reason' => 'failed_transport_not_listable'],
+                    static fn(string $id): array => ['id' => $id, 'reason' => 'failed_transport_not_listable'],
                     $ids,
                 ),
             ];
@@ -110,7 +110,7 @@ class MessageOperations
                     continue;
                 }
                 ++$processed;
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $failed[] = ['id' => $id, 'reason' => $e->getMessage()];
             }
         }

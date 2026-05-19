@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Command;
@@ -10,6 +11,9 @@ use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\Capabilities;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\MessageDescriptor;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\TransportAdapterInterface;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\TransportRegistry;
+use InvalidArgumentException;
+use RuntimeException;
+use Throwable;
 
 final class ListTransportsCommandTest extends TestCase
 {
@@ -35,7 +39,7 @@ final class ListTransportsCommandTest extends TestCase
     public function testReportsCountErrorsInline(): void
     {
         $broken = new FakeAdapter('broken', 'redis', 0, Capabilities::countOnly());
-        $broken->countException = new \RuntimeException('Connection refused');
+        $broken->countException = new RuntimeException('Connection refused');
         $registry = new StubRegistry([$broken]);
         $tester = new CommandTester(new ListTransportsCommand($registry));
 
@@ -69,13 +73,11 @@ final class ListTransportsCommandTest extends TestCase
 final class StubRegistry extends TransportRegistry
 {
     /** @param list<TransportAdapterInterface> $adapters */
-    public function __construct(private readonly array $adapters)
-    {
-    }
+    public function __construct(private readonly array $adapters) {}
 
     public function names(): array
     {
-        return array_map(fn (TransportAdapterInterface $a): string => $a->name(), $this->adapters);
+        return array_map(fn(TransportAdapterInterface $a): string => $a->name(), $this->adapters);
     }
 
     public function adapter(string $name): TransportAdapterInterface
@@ -85,7 +87,7 @@ final class StubRegistry extends TransportRegistry
                 return $a;
             }
         }
-        throw new \InvalidArgumentException('not found');
+        throw new InvalidArgumentException('not found');
     }
 
     public function adapters(): iterable
@@ -96,15 +98,14 @@ final class StubRegistry extends TransportRegistry
 
 final class FakeAdapter implements TransportAdapterInterface
 {
-    public ?\Throwable $countException = null;
+    public ?Throwable $countException = null;
 
     public function __construct(
         private readonly string $name,
         private readonly string $type,
         private readonly int $count,
         private readonly Capabilities $capabilities,
-    ) {
-    }
+    ) {}
 
     public function name(): string
     {

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\EventSubscriber;
@@ -13,6 +14,8 @@ use Symfony\Component\Messenger\Stamp\RedeliveryStamp;
 use TwoChain\PimcoreMessengerDashboardBundle\Entity\StatsRecord;
 use TwoChain\PimcoreMessengerDashboardBundle\EventSubscriber\MessengerAuditSubscriber;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\StatsRecorderInterface;
+use RuntimeException;
+use Stringable;
 
 final class MessengerAuditSubscriberTest extends TestCase
 {
@@ -41,7 +44,7 @@ final class MessengerAuditSubscriberTest extends TestCase
         $subscriber = new MessengerAuditSubscriber($recorder, new NullLogger(), enabled: true);
 
         $envelope = new Envelope(new FakeMessage());
-        $event = new WorkerMessageFailedEvent($envelope, 'pimcore_core', new \RuntimeException('transient'));
+        $event = new WorkerMessageFailedEvent($envelope, 'pimcore_core', new RuntimeException('transient'));
         $event->setForRetry();
 
         $subscriber->onReceived(new WorkerMessageReceivedEvent($envelope, 'pimcore_core'));
@@ -57,7 +60,7 @@ final class MessengerAuditSubscriberTest extends TestCase
 
         $envelope = (new Envelope(new FakeMessage()))
             ->with(new RedeliveryStamp(3));
-        $exception = new \RuntimeException('permanent failure');
+        $exception = new RuntimeException('permanent failure');
         $event = new WorkerMessageFailedEvent($envelope, 'pimcore_core', $exception);
         // willRetry stays false (default)
 
@@ -67,7 +70,7 @@ final class MessengerAuditSubscriberTest extends TestCase
         $this->assertCount(1, $recorder->records);
         $rec = $recorder->records[0];
         $this->assertSame(StatsRecord::STATUS_FAILED, $rec->getStatus());
-        $this->assertSame(\RuntimeException::class, $rec->getFailureClass());
+        $this->assertSame(RuntimeException::class, $rec->getFailureClass());
         $this->assertSame('permanent failure', $rec->getFailureMessage());
         $this->assertSame(3, $rec->getRetryCount());
     }
@@ -82,7 +85,7 @@ final class MessengerAuditSubscriberTest extends TestCase
         $subscriber->onReceived(new WorkerMessageReceivedEvent($envelope, 'pimcore_core'));
         $subscriber->onHandled(new WorkerMessageHandledEvent($envelope, 'pimcore_core')); // must not throw
 
-        $warnings = array_filter($logger->records, fn ($r) => $r['level'] === 'warning');
+        $warnings = array_filter($logger->records, fn($r) => $r['level'] === 'warning');
         $this->assertNotEmpty($warnings, 'subscriber should log a warning when recorder throws');
     }
 
@@ -112,9 +115,7 @@ final class MessengerAuditSubscriberTest extends TestCase
 
 final class FakeMessage
 {
-    public function __construct(public readonly string $payload = 'hi')
-    {
-    }
+    public function __construct(public readonly string $payload = 'hi') {}
 }
 
 final class InMemoryRecorder implements StatsRecorderInterface
@@ -132,7 +133,7 @@ final class ThrowingRecorder implements StatsRecorderInterface
 {
     public function record(StatsRecord $rec): void
     {
-        throw new \RuntimeException('db unreachable');
+        throw new RuntimeException('db unreachable');
     }
 }
 
@@ -141,7 +142,7 @@ final class CollectingLogger extends \Psr\Log\AbstractLogger
     /** @var list<array{level: string, message: string, context: array<string, mixed>}> */
     public array $records = [];
 
-    public function log($level, \Stringable|string $message, array $context = []): void
+    public function log($level, Stringable|string $message, array $context = []): void
     {
         $this->records[] = ['level' => (string) $level, 'message' => (string) $message, 'context' => $context];
     }

@@ -6,6 +6,8 @@ namespace TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter;
 
 use Symfony\Component\Messenger\Transport\Receiver\MessageCountAwareInterface;
 use Symfony\Component\Messenger\Transport\Receiver\ReceiverInterface;
+use LogicException;
+use Override;
 
 /**
  * Adapter for Symfony's Beanstalkd transport
@@ -22,22 +24,21 @@ final readonly class BeanstalkdTransportAdapter implements TransportAdapterInter
     public function __construct(
         private string $name,
         private ReceiverInterface $receiver,
-    ) {
-    }
+    ) {}
 
-    #[\Override]
+    #[Override]
     public function name(): string
     {
         return $this->name;
     }
 
-    #[\Override]
+    #[Override]
     public function type(): string
     {
         return 'beanstalkd';
     }
 
-    #[\Override]
+    #[Override]
     public function capabilities(): Capabilities
     {
         return new Capabilities(
@@ -45,7 +46,7 @@ final readonly class BeanstalkdTransportAdapter implements TransportAdapterInter
         );
     }
 
-    #[\Override]
+    #[Override]
     public function count(): int
     {
         if (!$this->receiver instanceof MessageCountAwareInterface) {
@@ -55,39 +56,39 @@ final readonly class BeanstalkdTransportAdapter implements TransportAdapterInter
         return $this->receiver->getMessageCount();
     }
 
-    #[\Override]
+    #[Override]
     public function countListable(?string $query = null): int
     {
-        throw new \LogicException('Beanstalkd transport does not support listing messages.');
+        throw new LogicException('Beanstalkd transport does not support listing messages.');
     }
 
-    #[\Override]
+    #[Override]
     public function list(int $offset = 0, int $limit = 50, ?string $query = null): array
     {
-        throw new \LogicException('Beanstalkd transport does not support listing messages.');
+        throw new LogicException('Beanstalkd transport does not support listing messages.');
     }
 
-    #[\Override]
+    #[Override]
     public function find(string $id): ?MessageDescriptor
     {
-        throw new \LogicException('Beanstalkd transport does not support per-message inspection.');
+        throw new LogicException('Beanstalkd transport does not support per-message inspection.');
     }
 
-    #[\Override]
+    #[Override]
     public function findEnvelope(string $id): ?\Symfony\Component\Messenger\Envelope
     {
-        throw new \LogicException('Beanstalkd transport does not support per-message inspection.');
+        throw new LogicException('Beanstalkd transport does not support per-message inspection.');
     }
 
-    #[\Override]
+    #[Override]
     public function deleteOne(string $id): bool
     {
-        throw new \LogicException('Beanstalkd transport does not support deleting individual messages.');
+        throw new LogicException('Beanstalkd transport does not support deleting individual messages.');
     }
 
-    #[\Override]
+    #[Override]
     public function purge(): int
     {
-        throw new \LogicException('Beanstalkd transport does not support bulk purge.');
+        throw new LogicException('Beanstalkd transport does not support bulk purge.');
     }
 }

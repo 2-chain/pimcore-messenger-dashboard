@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Controller;
@@ -20,6 +21,11 @@ use TwoChain\PimcoreMessengerDashboardBundle\Service\MessageOperations;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\PermissionChecker;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\TransportAdapterFactory;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\TransportRegistry;
+use DateTimeImmutable;
+use InvalidArgumentException;
+use LogicException;
+use RuntimeException;
+use Throwable;
 
 /**
  * The controller's only non-unit dependency is Pimcore's session-auth
@@ -76,7 +82,7 @@ final class DashboardControllerTest extends TestCase
     public function testListTransportsReturnsCountUnavailableWhenAdapterCountThrows(): void
     {
         $broken = new ControllerFakeAdapter('redis_down', 'redis', 0, Capabilities::countOnly());
-        $broken->countException = new \RuntimeException('connection refused');
+        $broken->countException = new RuntimeException('connection refused');
         $controller = $this->controller([$broken]);
 
         $body = $this->decode($controller->listTransports(new Request()));
@@ -100,9 +106,9 @@ final class DashboardControllerTest extends TestCase
     {
         $adapter = new ControllerFakeAdapter('q', 'doctrine', 3, Capabilities::full());
         $adapter->listResults = [
-            new MessageDescriptor(id: '1', messageClass: 'A', createdAt: new \DateTimeImmutable()),
-            new MessageDescriptor(id: '2', messageClass: 'A', createdAt: new \DateTimeImmutable()),
-            new MessageDescriptor(id: '3', messageClass: 'A', createdAt: new \DateTimeImmutable()),
+            new MessageDescriptor(id: '1', messageClass: 'A', createdAt: new DateTimeImmutable()),
+            new MessageDescriptor(id: '2', messageClass: 'A', createdAt: new DateTimeImmutable()),
+            new MessageDescriptor(id: '3', messageClass: 'A', createdAt: new DateTimeImmutable()),
         ];
         $adapter->countListableResult = 3;
         $controller = $this->controller([$adapter]);
@@ -172,7 +178,7 @@ final class DashboardControllerTest extends TestCase
     public function testListMessagesFallsBackToFullCountWhenCountListableThrowsLogicException(): void
     {
         $adapter = new ControllerFakeAdapter('q', 'redis', 7, Capabilities::full());
-        $adapter->countListableException = new \LogicException('not supported');
+        $adapter->countListableException = new LogicException('not supported');
         $controller = $this->controller([$adapter]);
 
         $body = $this->decode($controller->listMessages(new Request(), 'q'));
@@ -184,7 +190,7 @@ final class DashboardControllerTest extends TestCase
 
     public function testShowMessageReturnsDescriptor(): void
     {
-        $desc = new MessageDescriptor(id: 'abc', messageClass: 'X', createdAt: new \DateTimeImmutable('2026-01-01T00:00:00+00:00'));
+        $desc = new MessageDescriptor(id: 'abc', messageClass: 'X', createdAt: new DateTimeImmutable('2026-01-01T00:00:00+00:00'));
         $adapter = new ControllerFakeAdapter('q', 'doctrine', 1, Capabilities::full());
         $adapter->findResults = ['abc' => $desc];
         $controller = $this->controller([$adapter]);
@@ -309,9 +315,9 @@ final class DashboardControllerTest extends TestCase
     {
         $failed = new ControllerFakeAdapter('pim_failed', 'doctrine', 0, Capabilities::full());
         $failed->listResults = [
-            new MessageDescriptor(id: '1', messageClass: 'A', createdAt: new \DateTimeImmutable()),
-            new MessageDescriptor(id: '2', messageClass: 'B', createdAt: new \DateTimeImmutable()),
-            new MessageDescriptor(id: '3', messageClass: 'A', createdAt: new \DateTimeImmutable()),
+            new MessageDescriptor(id: '1', messageClass: 'A', createdAt: new DateTimeImmutable()),
+            new MessageDescriptor(id: '2', messageClass: 'B', createdAt: new DateTimeImmutable()),
+            new MessageDescriptor(id: '3', messageClass: 'A', createdAt: new DateTimeImmutable()),
         ];
         $controller = $this->controller([$failed], failedTransportName: 'pim_failed');
 
@@ -330,9 +336,9 @@ final class DashboardControllerTest extends TestCase
     {
         $failed = new ControllerFakeAdapter('pim_failed', 'doctrine', 0, Capabilities::full());
         $failed->listResults = [
-            new MessageDescriptor(id: '1', messageClass: 'Zeta', createdAt: new \DateTimeImmutable()),
-            new MessageDescriptor(id: '2', messageClass: 'Alpha', createdAt: new \DateTimeImmutable()),
-            new MessageDescriptor(id: '3', messageClass: 'Alpha', createdAt: new \DateTimeImmutable()),
+            new MessageDescriptor(id: '1', messageClass: 'Zeta', createdAt: new DateTimeImmutable()),
+            new MessageDescriptor(id: '2', messageClass: 'Alpha', createdAt: new DateTimeImmutable()),
+            new MessageDescriptor(id: '3', messageClass: 'Alpha', createdAt: new DateTimeImmutable()),
         ];
         $controller = $this->controller([$failed], failedTransportName: 'pim_failed');
 
@@ -389,7 +395,7 @@ final class DashboardControllerTest extends TestCase
     {
         $adapter = new ControllerFakeAdapter('q', 'doctrine', 0, Capabilities::full());
         $stats = new ControllerStatsRepo();
-        $stats->lastHandledAtResults = ['q' => new \DateTimeImmutable('2026-05-19T10:00:00+00:00')];
+        $stats->lastHandledAtResults = ['q' => new DateTimeImmutable('2026-05-19T10:00:00+00:00')];
         $stats->countSplitResults = ['q' => ['handled' => 10, 'failed' => 1]];
         $controller = $this->controller([$adapter], stats: $stats);
 
@@ -469,13 +475,11 @@ final class NoopPermissionChecker extends PermissionChecker
 final class ControllerStubRegistry extends TransportRegistry
 {
     /** @param list<ControllerFakeAdapter> $adapters */
-    public function __construct(private readonly array $adapters)
-    {
-    }
+    public function __construct(private readonly array $adapters) {}
 
     public function names(): array
     {
-        return array_map(fn (TransportAdapterInterface $a): string => $a->name(), $this->adapters);
+        return array_map(fn(TransportAdapterInterface $a): string => $a->name(), $this->adapters);
     }
 
     public function adapter(string $name): TransportAdapterInterface
@@ -485,7 +489,7 @@ final class ControllerStubRegistry extends TransportRegistry
                 return $a;
             }
         }
-        throw new \InvalidArgumentException(sprintf('No adapter named %s', $name));
+        throw new InvalidArgumentException(sprintf('No adapter named %s', $name));
     }
 
     public function adapters(): iterable
@@ -496,8 +500,8 @@ final class ControllerStubRegistry extends TransportRegistry
 
 final class ControllerFakeAdapter implements TransportAdapterInterface
 {
-    public ?\Throwable $countException = null;
-    public ?\Throwable $countListableException = null;
+    public ?Throwable $countException = null;
+    public ?Throwable $countListableException = null;
     public int $countListableResult = 0;
     /** @var list<MessageDescriptor> */
     public array $listResults = [];
@@ -512,8 +516,7 @@ final class ControllerFakeAdapter implements TransportAdapterInterface
         private readonly string $type,
         private readonly int $count,
         private readonly Capabilities $capabilities,
-    ) {
-    }
+    ) {}
 
     public function name(): string
     {
@@ -628,7 +631,7 @@ final class ControllerMessageOps extends MessageOperations
 
 final class ControllerStatsRepo extends StatsRecordRepository
 {
-    /** @var array<string, \DateTimeImmutable> */
+    /** @var array<string, DateTimeImmutable> */
     public array $lastHandledAtResults = [];
     /** @var array<string, array{handled: int, failed: int}> */
     public array $countSplitResults = [];
@@ -638,26 +641,24 @@ final class ControllerStatsRepo extends StatsRecordRepository
         // Skip parent.
     }
 
-    public function record(StatsRecord $rec): void
-    {
-    }
+    public function record(StatsRecord $rec): void {}
 
-    public function prune(\DateTimeImmutable $before, int $batchSize = 10000): int
+    public function prune(DateTimeImmutable $before, int $batchSize = 10000): int
     {
         return 0;
     }
 
-    public function countOlderThan(\DateTimeImmutable $before): int
+    public function countOlderThan(DateTimeImmutable $before): int
     {
         return 0;
     }
 
-    public function lastHandledAt(string $transport): ?\DateTimeImmutable
+    public function lastHandledAt(string $transport): ?DateTimeImmutable
     {
         return $this->lastHandledAtResults[$transport] ?? null;
     }
 
-    public function countSplit(string $transport, \DateTimeImmutable $since): array
+    public function countSplit(string $transport, DateTimeImmutable $since): array
     {
         return $this->countSplitResults[$transport] ?? ['handled' => 0, 'failed' => 0];
     }

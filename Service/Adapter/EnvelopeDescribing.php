@@ -11,6 +11,11 @@ use Symfony\Component\Messenger\Stamp\SentToFailureTransportStamp;
 use Symfony\Component\Messenger\Stamp\StampInterface;
 use Symfony\Component\Messenger\Stamp\TransportMessageIdStamp;
 use TwoChain\PimcoreMessengerDashboardBundle\Stamp\DashboardRequeueCountStamp;
+use BackedEnum;
+use DateTimeImmutable;
+use DateTimeInterface;
+use ReflectionObject;
+use UnitEnum;
 
 /**
  * Shared envelope→descriptor logic. Used by every adapter that surfaces a
@@ -21,14 +26,28 @@ use TwoChain\PimcoreMessengerDashboardBundle\Stamp\DashboardRequeueCountStamp;
 trait EnvelopeDescribing
 {
     /**
-     * Substring-match an envelope against a regex pattern. Tries the
-     * message class first (cheap) and falls back to the body preview.
+     * Substring-match an envelope against a regex pattern.
+     *
+     * Tries cheap matches first (message class FQCN, then ErrorDetailsStamp's
+     * exception class/message if the envelope came from a failure transport)
+     * and falls back to the serialized body preview.
+     *
+     * Including ErrorDetailsStamp here means failed-transport searches can
+     * find messages by their exception text, not just by their message body.
      */
     protected function envelopeMatches(Envelope $envelope, string $regex): bool
     {
         $message = $envelope->getMessage();
         if (preg_match($regex, $message::class) === 1) {
             return true;
+        }
+
+        $errorDetails = $envelope->last(ErrorDetailsStamp::class);
+        if ($errorDetails instanceof ErrorDetailsStamp) {
+            if (preg_match($regex, $errorDetails->getExceptionClass()) === 1
+                || preg_match($regex, $errorDetails->getExceptionMessage()) === 1) {
+                return true;
+            }
         }
 
         $body = method_exists($message, '__toString')
@@ -48,7 +67,7 @@ trait EnvelopeDescribing
      * RedeliveryStamp's redelivered-at, then to "now" as a last resort —
      * the fallback is unstable across renders but at least non-null.
      */
-    protected function envelopeToDescriptor(Envelope $envelope, ?\DateTimeImmutable $createdAtOverride = null): MessageDescriptor
+    protected function envelopeToDescriptor(Envelope $envelope, ?DateTimeImmutable $createdAtOverride = null): MessageDescriptor
     {
         $idStamp = $envelope->last(TransportMessageIdStamp::class);
         $id = $idStamp instanceof StampInterface ? (string) $idStamp->getId() : '';
@@ -82,13 +101,32 @@ trait EnvelopeDescribing
         return new MessageDescriptor(
             id: $id,
             messageClass: $message::class,
-            createdAt: $createdAtOverride ?? $redelivery?->getRedeliveredAt() ?? new \DateTimeImmutable(),
+            createdAt: $this->resolveCreatedAt($createdAtOverride, $redelivery?->getRedeliveredAt()),
             retryCount: $retryCount,
             headers: $headers,
-            bodyPreview: $body !== null ? mb_strcut($body, 0, MessageDescriptor::MAX_BODY_PREVIEW_BYTES, 'UTF-8') : null,
+            bodyPreview: is_string($body) ? mb_strcut($body, 0, MessageDescriptor::MAX_BODY_PREVIEW_BYTES, 'UTF-8') : null,
             failureClass: $errorDetails?->getExceptionClass(),
             failureMessage: $errorDetails?->getExceptionMessage(),
         );
+    }
+
+    /**
+     * RedeliveryStamp's `getRedeliveredAt()` is typed `\DateTimeInterface`,
+     * but our DTO insists on `\DateTimeImmutable`. Convert when needed and
+     * never propagate a mutable instance into the descriptor.
+     */
+    private function resolveCreatedAt(?DateTimeImmutable $override, ?DateTimeInterface $redelivered): DateTimeImmutable
+    {
+        if ($override !== null) {
+            return $override;
+        }
+        if ($redelivered === null) {
+            return new DateTimeImmutable();
+        }
+
+        return $redelivered instanceof DateTimeImmutable
+            ? $redelivered
+            : DateTimeImmutable::createFromInterface($redelivered);
     }
 
     /**
@@ -100,7 +138,7 @@ trait EnvelopeDescribing
     protected function summarizeMessage(object $message): array
     {
         $out = [];
-        foreach ((new \ReflectionObject($message))->getProperties() as $prop) {
+        foreach ((new ReflectionObject($message))->getProperties() as $prop) {
             if (!$prop->isInitialized($message)) {
                 continue;
             }
@@ -108,9 +146,9 @@ trait EnvelopeDescribing
             $out[$prop->getName()] = match (true) {
                 $value === null, is_scalar($value) => $value,
                 is_array($value) => $value,
-                $value instanceof \BackedEnum => $value->value,
-                $value instanceof \UnitEnum => $value->name,
-                $value instanceof \DateTimeInterface => $value->format(\DateTimeInterface::ATOM),
+                $value instanceof BackedEnum => $value->value,
+                $value instanceof UnitEnum => $value->name,
+                $value instanceof DateTimeInterface => $value->format(DateTimeInterface::ATOM),
                 default => '[' . \get_debug_type($value) . ']',
             };
         }

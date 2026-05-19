@@ -211,9 +211,12 @@ while the user is interacting with a grid (no flicker mid-selection).
 Every listable transport detail view (plus the **Failed** view) has a search
 field above the grid. The query is matched against:
 
-- the fully qualified message class (e.g. `App\Message\ImportProduct`), and
+- the fully qualified message class (e.g. `App\Message\ImportProduct`),
 - the body preview (the JSON-serialized public properties for non-`\Stringable`
-  messages, or the `__toString()` value otherwise).
+  messages, or the `__toString()` value otherwise), and
+- on messages from the failure transport, the exception class and exception
+  message carried on `ErrorDetailsStamp` — so you can find a failed message by
+  the text of its failure (`Connection refused`, `SQLSTATE[23000]…`, etc.).
 
 The match uses SQL `LIKE` semantics: substring by default, with `%` and `_` as
 wildcards. To match a literal `%` or `_`, prefix it with a backslash (`\%`,

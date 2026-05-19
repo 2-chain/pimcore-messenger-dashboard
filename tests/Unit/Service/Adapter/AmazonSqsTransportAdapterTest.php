@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Service\Adapter;
@@ -8,6 +9,8 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Transport\Receiver\MessageCountAwareInterface;
 use Symfony\Component\Messenger\Transport\Receiver\ReceiverInterface;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\AmazonSqsTransportAdapter;
+use LogicException;
+use stdClass;
 
 final class AmazonSqsTransportAdapterTest extends TestCase
 {
@@ -19,7 +22,7 @@ final class AmazonSqsTransportAdapterTest extends TestCase
 
     public function testCanPurgeReflectsConnectionAvailability(): void
     {
-        $withConn = new AmazonSqsTransportAdapter('q', new SqsReceiverWithConnection(new \stdClass()));
+        $withConn = new AmazonSqsTransportAdapter('q', new SqsReceiverWithConnection(new stdClass()));
         $this->assertTrue($withConn->capabilities()->canPurge);
 
         $withoutConn = new AmazonSqsTransportAdapter('q', new SqsBareReceiver());
@@ -53,9 +56,9 @@ final class AmazonSqsTransportAdapterTest extends TestCase
 
     public function testPurgeThrowsWhenConnectionLacksReset(): void
     {
-        $adapter = new AmazonSqsTransportAdapter('q', new SqsReceiverWithConnection(new \stdClass()));
+        $adapter = new AmazonSqsTransportAdapter('q', new SqsReceiverWithConnection(new stdClass()));
 
-        $this->expectException(\LogicException::class);
+        $this->expectException(LogicException::class);
         $adapter->purge();
     }
 
@@ -63,7 +66,7 @@ final class AmazonSqsTransportAdapterTest extends TestCase
     {
         $adapter = new AmazonSqsTransportAdapter('q', new SqsBareReceiver());
 
-        $this->expectException(\LogicException::class);
+        $this->expectException(LogicException::class);
         $adapter->purge();
     }
 
@@ -71,7 +74,7 @@ final class AmazonSqsTransportAdapterTest extends TestCase
     {
         $adapter = new AmazonSqsTransportAdapter('q', new SqsBareReceiver());
 
-        $this->expectException(\LogicException::class);
+        $this->expectException(LogicException::class);
         $adapter->list();
     }
 }
@@ -83,53 +86,37 @@ final class SqsBareReceiver implements ReceiverInterface
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 }
 
 final class SqsReceiverWithConnection implements ReceiverInterface
 {
-    public function __construct(public readonly object $connection)
-    {
-    }
+    public function __construct(public readonly object $connection) {}
 
     public function get(): iterable
     {
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 }
 
 final class SqsCountAwareReceiver implements ReceiverInterface, MessageCountAwareInterface
 {
-    public function __construct(private readonly int $count)
-    {
-    }
+    public function __construct(private readonly int $count) {}
 
     public function get(): iterable
     {
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 
     public function getMessageCount(): int
     {

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Service\Adapter;
@@ -8,6 +9,7 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Transport\Receiver\MessageCountAwareInterface;
 use Symfony\Component\Messenger\Transport\Receiver\ReceiverInterface;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\BeanstalkdTransportAdapter;
+use LogicException;
 
 final class BeanstalkdTransportAdapterTest extends TestCase
 {
@@ -52,7 +54,7 @@ final class BeanstalkdTransportAdapterTest extends TestCase
             try {
                 $adapter->$method();
                 $this->fail($method);
-            } catch (\LogicException) {
+            } catch (LogicException) {
                 $this->addToAssertionCount(1);
             }
         }
@@ -60,7 +62,7 @@ final class BeanstalkdTransportAdapterTest extends TestCase
             try {
                 $adapter->$method('x');
                 $this->fail($method);
-            } catch (\LogicException) {
+            } catch (LogicException) {
                 $this->addToAssertionCount(1);
             }
         }
@@ -74,33 +76,23 @@ final class BsNoop implements ReceiverInterface
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 }
 
 final class BsCountAware implements ReceiverInterface, MessageCountAwareInterface
 {
-    public function __construct(private readonly int $count)
-    {
-    }
+    public function __construct(private readonly int $count) {}
 
     public function get(): iterable
     {
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 
     public function getMessageCount(): int
     {

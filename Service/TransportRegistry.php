@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TwoChain\PimcoreMessengerDashboardBundle\Service;
 
 use Psr\Container\ContainerInterface;
+use Symfony\Contracts\Service\ServiceProviderInterface;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\TransportAdapterInterface;
 
 /**
@@ -19,11 +20,13 @@ class TransportRegistry
     /** @var list<string>|null */
     private ?array $names = null;
 
+    /**
+     * @param ServiceProviderInterface<\Symfony\Component\Messenger\Transport\Receiver\ReceiverInterface> $receiverLocator
+     */
     public function __construct(
-        private readonly ContainerInterface $receiverLocator,
+        private readonly ContainerInterface&ServiceProviderInterface $receiverLocator,
         private readonly TransportAdapterFactory $factory,
-    ) {
-    }
+    ) {}
 
     /** @return list<string> user-facing transport names, sorted alphabetically */
     public function names(): array
@@ -39,7 +42,7 @@ class TransportRegistry
         // by the absence of dots in the name.
         $names = array_values(array_filter(
             array_keys($this->receiverLocator->getProvidedServices()),
-            fn (string $name): bool => !str_contains($name, '.'),
+            fn(string $name): bool => !str_contains($name, '.'),
         ));
         sort($names);
 

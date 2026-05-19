@@ -12,6 +12,8 @@ use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
 use Symfony\Component\Messenger\Event\WorkerMessageHandledEvent;
 use Symfony\Component\Messenger\Event\WorkerMessageReceivedEvent;
 use Symfony\Component\Messenger\Stamp\RedeliveryStamp;
+use Override;
+use Throwable;
 
 /**
  * Writes one row to messenger_dashboard_stats per handled message and per
@@ -34,10 +36,9 @@ final class MessengerAuditSubscriber implements EventSubscriberInterface
         private readonly StatsRecorderInterface $recorder,
         private readonly LoggerInterface $logger,
         private readonly bool $enabled,
-    ) {
-    }
+    ) {}
 
-    #[\Override]
+    #[Override]
     public static function getSubscribedEvents(): array
     {
         return [
@@ -72,7 +73,7 @@ final class MessengerAuditSubscriber implements EventSubscriberInterface
                 $duration,
                 $envelope->last(RedeliveryStamp::class)?->getRetryCount(),
             ));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->logger->warning('Failed to record handled message stats', [
                 'transport' => $event->getReceiverName(),
                 'exception' => $e,
@@ -107,7 +108,7 @@ final class MessengerAuditSubscriber implements EventSubscriberInterface
                 $throwable::class,
                 $throwable->getMessage(),
             ));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->logger->warning('Failed to record failed message stats', [
                 'transport' => $event->getReceiverName(),
                 'exception' => $e,

@@ -17,6 +17,12 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
+use DateTimeImmutable;
+use DateTimeInterface;
+use InvalidArgumentException;
+use JsonException;
+use LogicException;
+use Throwable;
 
 /**
  * JSON REST API for the admin dashboard. All routes are under
@@ -50,8 +56,7 @@ class DashboardController extends AbstractController
         private readonly MessageOperations $operations,
         private readonly PermissionChecker $permissionChecker,
         private readonly ?string $failedTransportName = null,
-    ) {
-    }
+    ) {}
 
     #[Route('/transports', name: 'transports', methods: ['GET'])]
     public function listTransports(Request $request): JsonResponse
@@ -78,11 +83,11 @@ class DashboardController extends AbstractController
         $limit = min(500, max(1, (int) $request->query->get('limit', '50')));
         try {
             $query = $this->extractSearchQuery($request);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return $this->error($e->getMessage(), 'Search query exceeds the maximum allowed length.', 400);
         }
 
-        $items = array_map(static fn ($d): array => $d->toArray(), $adapter->list($offset, $limit, $query));
+        $items = array_map(static fn($d): array => $d->toArray(), $adapter->list($offset, $limit, $query));
         $total = $this->totalListableForPaging($adapter, $query);
 
         return new JsonResponse([
@@ -158,7 +163,7 @@ class DashboardController extends AbstractController
         $classFilter = $classFilter !== '' ? $classFilter : null;
         try {
             $query = $this->extractSearchQuery($request);
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             return $this->error($e->getMessage(), 'Search query exceeds the maximum allowed length.', 400);
         }
 
@@ -170,15 +175,15 @@ class DashboardController extends AbstractController
             $allDescriptors = $failed->list(0, self::FILTER_FETCH_CAP, $query);
             $matches = array_values(array_filter(
                 $allDescriptors,
-                static fn ($d): bool => $d->messageClass === $classFilter,
+                static fn($d): bool => $d->messageClass === $classFilter,
             ));
             $items = array_map(
-                static fn ($d): array => $d->toArray(),
+                static fn($d): array => $d->toArray(),
                 array_slice($matches, $offset, $limit),
             );
             $total = count($matches);
         } else {
-            $items = array_map(static fn ($d): array => $d->toArray(), $failed->list($offset, $limit, $query));
+            $items = array_map(static fn($d): array => $d->toArray(), $failed->list($offset, $limit, $query));
             $total = $this->totalListableForPaging($failed, $query);
         }
 
@@ -298,14 +303,14 @@ class DashboardController extends AbstractController
 
         $rawWindows = (string) $request->query->get('windows', '1h,12h,24h');
         $windows = array_filter(array_map('trim', explode(',', $rawWindows)));
-        $now = new \DateTimeImmutable();
+        $now = new DateTimeImmutable();
 
         $result = [];
         foreach ($this->registry->adapters() as $adapter) {
-            $entry = ['lastHandledAt' => $this->stats->lastHandledAt($adapter->name())?->format(\DateTimeInterface::ATOM)];
+            $entry = ['lastHandledAt' => $this->stats->lastHandledAt($adapter->name())?->format(DateTimeInterface::ATOM)];
             foreach ($windows as $w) {
                 $since = $this->resolveWindow($now, $w);
-                if (!$since instanceof \DateTimeImmutable) {
+                if (!$since instanceof DateTimeImmutable) {
                     continue;
                 }
                 $entry[$w] = $this->stats->countSplit($adapter->name(), $since);
@@ -326,7 +331,7 @@ class DashboardController extends AbstractController
             'type' => $adapter->type(),
             'capabilities' => $adapter->capabilities()->toArray(),
             'count' => $this->safeCount($adapter),
-            'lastHandledAt' => $this->stats->lastHandledAt($adapter->name())?->format(\DateTimeInterface::ATOM),
+            'lastHandledAt' => $this->stats->lastHandledAt($adapter->name())?->format(DateTimeInterface::ATOM),
             'isFailedTransport' => $this->failedTransportName !== null
                 && $adapter->name() === $this->failedTransportName,
         ];
@@ -336,7 +341,7 @@ class DashboardController extends AbstractController
     {
         try {
             return $adapter->count();
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return 'unavailable';
         }
     }
@@ -366,7 +371,7 @@ class DashboardController extends AbstractController
     {
         try {
             return $adapter->countListable($query);
-        } catch (\LogicException) {
+        } catch (LogicException) {
             // Transport doesn't support filtered listing — fall back to its
             // unfiltered live count. Search is ignored for these transports.
             return $this->totalForPaging($adapter);
@@ -393,7 +398,7 @@ class DashboardController extends AbstractController
             return null;
         }
         if (mb_strlen($trimmed, 'UTF-8') > self::MAX_QUERY_LENGTH) {
-            throw new \InvalidArgumentException('query_too_long');
+            throw new InvalidArgumentException('query_too_long');
         }
 
         return $trimmed;
@@ -429,14 +434,14 @@ class DashboardController extends AbstractController
         }
         try {
             $decoded = json_decode($body, true, flags: JSON_THROW_ON_ERROR);
-        } catch (\JsonException) {
+        } catch (JsonException) {
             throw new NotFoundHttpException('Invalid JSON body.');
         }
 
         return is_array($decoded) ? $decoded : [];
     }
 
-    private function resolveWindow(\DateTimeImmutable $now, string $window): ?\DateTimeImmutable
+    private function resolveWindow(DateTimeImmutable $now, string $window): ?DateTimeImmutable
     {
         if (!preg_match('/^(\d+)([hdm])$/', $window, $m)) {
             return null;

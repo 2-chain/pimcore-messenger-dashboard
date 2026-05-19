@@ -9,6 +9,11 @@ use Doctrine\DBAL\Connection as DbalConnection;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Stamp\TransportMessageIdStamp;
 use Symfony\Component\Messenger\Transport\Receiver\ListableReceiverInterface;
+use DateTimeImmutable;
+use DateTimeZone;
+use Override;
+use ReflectionObject;
+use Throwable;
 
 /**
  * Doctrine-backed transport adapter. The Doctrine transport in Symfony
@@ -19,10 +24,16 @@ use Symfony\Component\Messenger\Transport\Receiver\ListableReceiverInterface;
  *
  * Inherits everything listable from ListableReceiverAdapter and:
  *  - Adds full capability flags.
- *  - Implements purge() via the receiver API.
- *  - Side-channel-queries the `created_at` column so descriptors reflect
- *    the actual storage timestamp instead of "now" on every render
- *    (Symfony's receiver doesn't stamp creation time back onto envelopes).
+ *  - Reads the `body` column directly via DBAL and deserializes through
+ *    {@see BodyDeserializer}, which tolerates both the standard PhpSerializer
+ *    output AND addslashes-style escaped bodies. Symfony's PhpSerializer
+ *    throws on the escaped variant, so going through `$receiver->find()` /
+ *    `$receiver->all()` would silently lose rows whose bodies happen to
+ *    have been escaped at write time.
+ *  - Implements purge() via a direct DELETE so it doesn't depend on the
+ *    receiver being able to deserialize every row.
+ *  - Surfaces the storage `created_at` so descriptors reflect the actual
+ *    insert timestamp instead of "now" on every render.
  */
 final class DoctrineTransportAdapter extends ListableReceiverAdapter
 {
@@ -33,14 +44,14 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
      *
      * @var array{conn: DbalConnection, table: string}|null|false
      */
-    private array|null|false $tableAccess = null;
+    private array|false|null $tableAccess = null;
 
     public function __construct(string $name, ListableReceiverInterface $receiver)
     {
         parent::__construct($name, $receiver, 'doctrine');
     }
 
-    #[\Override]
+    #[Override]
     public function capabilities(): Capabilities
     {
         return new Capabilities(
@@ -54,7 +65,7 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
         );
     }
 
-    #[\Override]
+    #[Override]
     public function countListable(?string $query = null): int
     {
         $access = $this->resolveTableAccess();
@@ -64,14 +75,21 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
             return parent::countListable($query);
         }
 
-        $params = [$this->queueNameFromAccess(), new \DateTimeImmutable('now', new \DateTimeZone('UTC'))];
+        $params = [$this->queueNameFromAccess(), new DateTimeImmutable('now', new DateTimeZone('UTC'))];
         $types = ['string', 'datetime_immutable'];
         $sql = sprintf(
             'SELECT COUNT(*) FROM %s WHERE queue_name = ? AND delivered_at IS NULL AND available_at <= ?',
             $access['table'],
         );
         if ($query !== null) {
-            $sql .= " AND (body LIKE ? OR headers LIKE ?) ESCAPE '\\\\'";
+            // No ESCAPE clause: SQLite requires a single-char escape (would
+            // need `'\'`, unterminated in MariaDB) while MariaDB needs
+            // `'\\'` (rejected by SQLite as 2 chars). Without ESCAPE, both
+            // drivers fall back to their default `\` escape behavior for
+            // `\%` and `\_`, which is what the bundle's PHP-side normalizer
+            // produces. Trade-off: a literal `%` or `_` in user input
+            // matches as a wildcard — acceptable for a free-text search box.
+            $sql .= ' AND (body LIKE ? OR headers LIKE ?)';
             $pattern = '%' . $this->normalizeQueryForLike($query) . '%';
             $params[] = $pattern;
             $params[] = $pattern;
@@ -81,40 +99,52 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
 
         try {
             return (int) $access['conn']->fetchOne($sql, $params, $types);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return parent::countListable($query);
         }
     }
 
-    #[\Override]
+    #[Override]
     public function list(int $offset = 0, int $limit = 50, ?string $query = null): array
     {
-        if ($query !== null) {
-            return $this->listFiltered($offset, $limit, $query);
+        $access = $this->resolveTableAccess();
+        if ($access === null) {
+            // Reflection access unavailable — fall back to the receiver-based
+            // parent path. Loses tolerance for escaped bodies but at least
+            // works on standard PhpSerializer output.
+            return parent::list($offset, $limit, $query);
         }
 
-        $envelopes = [];
-        foreach ($this->receiver->all($offset + $limit) as $envelope) {
-            $envelopes[] = $envelope;
+        try {
+            $rows = $this->fetchRowsForList($access, $offset, $limit, $query);
+        } catch (Throwable) {
+            return parent::list($offset, $limit, $query);
         }
-        $sliced = array_slice($envelopes, $offset, $limit);
-
-        $createdAtMap = $this->fetchCreatedAtForEnvelopes($sliced);
 
         $descriptors = [];
-        foreach ($sliced as $envelope) {
-            $id = (string) ($envelope->last(TransportMessageIdStamp::class)?->getId() ?? '');
-            $descriptors[] = $this->envelopeToDescriptor($envelope, $createdAtMap[$id] ?? null);
+        foreach ($rows as $row) {
+            $body = (string) ($row['body'] ?? '');
+            if ($body === '') {
+                continue;
+            }
+            $envelope = BodyDeserializer::tryDeserialize($body);
+            if (!$envelope instanceof Envelope) {
+                // Row exists but neither standard nor stripslashes-style
+                // deserialization yielded an Envelope. Skip rather than
+                // crashing the whole page.
+                continue;
+            }
+            $descriptors[] = $this->envelopeToDescriptor($envelope, $this->parseCreatedAt($row['created_at'] ?? null));
         }
 
         return $descriptors;
     }
 
-    #[\Override]
+    #[Override]
     public function find(string $id): ?MessageDescriptor
     {
         $envelope = $this->findEnvelope($id);
-        if (!$envelope instanceof \Symfony\Component\Messenger\Envelope) {
+        if (!$envelope instanceof Envelope) {
             return null;
         }
         $createdAt = $this->fetchCreatedAtForEnvelopes([$envelope])[$id] ?? null;
@@ -122,19 +152,136 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
         return $this->envelopeToDescriptor($envelope, $createdAt);
     }
 
-    #[\Override]
-    public function purge(): int
+    #[Override]
+    public function findEnvelope(string $id): ?Envelope
     {
-        $count = 0;
-        // Pull the current backlog and reject each. Cap at a sane upper
-        // bound to avoid runaway memory on huge tables — controllers should
-        // call repeatedly if needed.
-        foreach ($this->receiver->all(10000) as $envelope) {
-            $this->receiver->reject($envelope);
-            ++$count;
+        // Try Symfony's receiver first — for standard PhpSerializer bodies
+        // it adds any bridge-internal stamps (e.g. DoctrineReceivedStamp)
+        // that downstream operations like reject() rely on.
+        try {
+            $envelope = $this->receiver->find($id);
+            if ($envelope instanceof Envelope) {
+                return $envelope;
+            }
+        } catch (Throwable) {
+            // PhpSerializer throws MessageDecodingFailedException on bodies
+            // it can't parse (e.g. addslashes-style escaped storage). Fall
+            // through to the tolerant SQL path.
         }
 
-        return $count;
+        $access = $this->resolveTableAccess();
+        if ($access === null) {
+            return null;
+        }
+        try {
+            $body = $access['conn']->fetchOne(
+                sprintf('SELECT body FROM %s WHERE id = ?', $access['table']),
+                [$id],
+            );
+        } catch (Throwable) {
+            return null;
+        }
+        if (!is_string($body) || $body === '') {
+            return null;
+        }
+
+        return BodyDeserializer::tryDeserialize($body);
+    }
+
+    #[Override]
+    public function deleteOne(string $id): bool
+    {
+        $access = $this->resolveTableAccess();
+        if ($access === null) {
+            // Reflection access unavailable — fall back to the receiver
+            // path. Works for standard bodies (where find() returns an
+            // envelope carrying DoctrineReceivedStamp, which reject()
+            // needs).
+            return parent::deleteOne($id);
+        }
+
+        try {
+            $deleted = $access['conn']->executeStatement(
+                sprintf('DELETE FROM %s WHERE id = ? AND queue_name = ?', $access['table']),
+                [$id, $this->queueNameFromAccess()],
+                ['string', 'string'],
+            );
+
+            return $deleted > 0;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    #[Override]
+    public function purge(): int
+    {
+        $access = $this->resolveTableAccess();
+        if ($access === null) {
+            // Reflection-based access failed — fall back to the receiver
+            // iteration. Works on standard bodies but will short-circuit on
+            // the first un-deserializable row.
+            $count = 0;
+            foreach ($this->receiver->all(10000) as $envelope) {
+                $this->receiver->reject($envelope);
+                ++$count;
+            }
+
+            return $count;
+        }
+
+        try {
+            return (int) $access['conn']->executeStatement(
+                sprintf('DELETE FROM %s WHERE queue_name = ? AND delivered_at IS NULL', $access['table']),
+                [$this->queueNameFromAccess()],
+                ['string'],
+            );
+        } catch (Throwable) {
+            return 0;
+        }
+    }
+
+    /**
+     * Build the SELECT for {@see list()} — with optional LIKE filter.
+     *
+     * @param array{conn: DbalConnection, table: string} $access
+     * @return list<array<string, mixed>> rows with id, body, created_at
+     */
+    private function fetchRowsForList(array $access, int $offset, int $limit, ?string $query): array
+    {
+        $params = [$this->queueNameFromAccess(), new DateTimeImmutable('now', new DateTimeZone('UTC'))];
+        $types = ['string', 'datetime_immutable'];
+        $sql = sprintf(
+            'SELECT id, body, created_at FROM %s
+             WHERE queue_name = ?
+               AND delivered_at IS NULL
+               AND available_at <= ?',
+            $access['table'],
+        );
+        if ($query !== null) {
+            // See countListable() for why ESCAPE is omitted.
+            $sql .= ' AND (body LIKE ? OR headers LIKE ?)';
+            $pattern = '%' . $this->normalizeQueryForLike($query) . '%';
+            $params[] = $pattern;
+            $params[] = $pattern;
+            $types[] = 'string';
+            $types[] = 'string';
+        }
+        $sql .= sprintf(' ORDER BY available_at ASC LIMIT %d OFFSET %d', $limit, $offset);
+
+        return $access['conn']->fetchAllAssociative($sql, $params, $types);
+    }
+
+    private function parseCreatedAt(mixed $raw): ?DateTimeImmutable
+    {
+        if (!is_string($raw) || $raw === '') {
+            return null;
+        }
+        try {
+            return new DateTimeImmutable($raw);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -142,7 +289,7 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
      * single SELECT against the transport's own table.
      *
      * @param list<Envelope> $envelopes
-     * @return array<string, \DateTimeImmutable> keyed by transport message id
+     * @return array<string, DateTimeImmutable> keyed by transport message id
      */
     private function fetchCreatedAtForEnvelopes(array $envelopes): array
     {
@@ -166,7 +313,7 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
                 [$ids],
                 [ArrayParameterType::STRING],
             );
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return [];
         }
 
@@ -178,79 +325,14 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
                 continue;
             }
             try {
-                $map[$id] = new \DateTimeImmutable($value);
-            } catch (\Throwable) {
+                $map[$id] = new DateTimeImmutable($value);
+            } catch (Throwable) {
                 // Skip unparseable timestamps.
                 continue;
             }
         }
 
         return $map;
-    }
-
-    /**
-     * SQL-LIKE filtered listing — pulls matching ids from the underlying
-     * table, then routes each id back through the receiver so the existing
-     * envelope-to-descriptor pipeline reconstructs MessageDescriptors.
-     *
-     * @return list<MessageDescriptor>
-     */
-    private function listFiltered(int $offset, int $limit, string $query): array
-    {
-        $access = $this->resolveTableAccess();
-        if ($access === null) {
-            // Fall back to the parent's PHP filter when reflection access
-            // is unavailable. Slower but correct.
-            return parent::list($offset, $limit, $query);
-        }
-
-        $pattern = '%' . $this->normalizeQueryForLike($query) . '%';
-        $sql = sprintf(
-            'SELECT id, created_at FROM %s
-             WHERE queue_name = ?
-               AND delivered_at IS NULL
-               AND available_at <= ?
-               AND (body LIKE ? OR headers LIKE ?) ESCAPE \'\\\\\'
-             ORDER BY available_at ASC
-             LIMIT %d OFFSET %d',
-            $access['table'],
-            $limit,
-            $offset,
-        );
-
-        try {
-            $rows = $access['conn']->fetchAllAssociative(
-                $sql,
-                [$this->queueNameFromAccess(), new \DateTimeImmutable('now', new \DateTimeZone('UTC')), $pattern, $pattern],
-                ['string', 'datetime_immutable', 'string', 'string'],
-            );
-        } catch (\Throwable) {
-            return parent::list($offset, $limit, $query);
-        }
-
-        $descriptors = [];
-        foreach ($rows as $row) {
-            $id = (string) ($row['id'] ?? '');
-            if ($id === '') {
-                continue;
-            }
-            $envelope = $this->receiver->find($id);
-            if (!$envelope instanceof \Symfony\Component\Messenger\Envelope) {
-                continue; // raced with a worker — message vanished between our COUNT and lookup
-            }
-            $createdAt = null;
-            $rawCreated = $row['created_at'] ?? null;
-            if (is_string($rawCreated) && $rawCreated !== '') {
-                try {
-                    $createdAt = new \DateTimeImmutable($rawCreated);
-                } catch (\Throwable) {
-                    // skip unparseable timestamp
-                }
-            }
-            $descriptors[] = $this->envelopeToDescriptor($envelope, $createdAt);
-        }
-
-        return $descriptors;
     }
 
     /**
@@ -343,7 +425,7 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
 
     private function extractProperty(object $obj, string $property): mixed
     {
-        $reflection = new \ReflectionObject($obj);
+        $reflection = new ReflectionObject($obj);
         if (!$reflection->hasProperty($property)) {
             return null;
         }

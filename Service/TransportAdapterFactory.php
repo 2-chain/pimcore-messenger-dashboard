@@ -35,8 +35,7 @@ final class TransportAdapterFactory
 
     public function __construct(
         private readonly ContainerInterface $receiverLocator,
-    ) {
-    }
+    ) {}
 
     public function for(string $name): TransportAdapterInterface
     {
@@ -95,9 +94,12 @@ final class TransportAdapterFactory
 
     private function isAmqpTransport(ReceiverInterface $receiver): bool
     {
+        // Plain strings (not ::class) — the AMQP bridge is an optional
+        // dependency; using ::class would make PHPStan complain about
+        // missing classes when symfony/amqp-messenger isn't installed.
         return $this->isInstanceOfAny($receiver, [
-            \Symfony\Component\Messenger\Bridge\Amqp\Transport\AmqpTransport::class,
-            \Symfony\Component\Messenger\Bridge\Amqp\Transport\AmqpReceiver::class,
+            'Symfony\\Component\\Messenger\\Bridge\\Amqp\\Transport\\AmqpTransport',
+            'Symfony\\Component\\Messenger\\Bridge\\Amqp\\Transport\\AmqpReceiver',
         ]);
     }
 
@@ -125,7 +127,11 @@ final class TransportAdapterFactory
         ]);
     }
 
-    /** @param list<class-string> $fqcns */
+    /**
+     * @param list<string> $fqcns Plain strings rather than `class-string` —
+     *     entries may refer to optional bridge classes that aren't installed,
+     *     and `class_exists()` is what gates the actual `instanceof` check.
+     */
     private function isInstanceOfAny(object $obj, array $fqcns): bool
     {
         foreach ($fqcns as $fqcn) {

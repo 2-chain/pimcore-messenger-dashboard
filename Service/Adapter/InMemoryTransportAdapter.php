@@ -7,6 +7,7 @@ namespace TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Stamp\TransportMessageIdStamp;
 use Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport;
+use Override;
 
 /**
  * Adapter for Symfony's in-memory transport.
@@ -32,22 +33,21 @@ final class InMemoryTransportAdapter implements TransportAdapterInterface
     public function __construct(
         private readonly string $name,
         private readonly InMemoryTransport $transport,
-    ) {
-    }
+    ) {}
 
-    #[\Override]
+    #[Override]
     public function name(): string
     {
         return $this->name;
     }
 
-    #[\Override]
+    #[Override]
     public function type(): string
     {
         return 'in_memory';
     }
 
-    #[\Override]
+    #[Override]
     public function capabilities(): Capabilities
     {
         return new Capabilities(
@@ -61,13 +61,13 @@ final class InMemoryTransportAdapter implements TransportAdapterInterface
         );
     }
 
-    #[\Override]
+    #[Override]
     public function count(): int
     {
         return count($this->pending());
     }
 
-    #[\Override]
+    #[Override]
     public function countListable(?string $query = null): int
     {
         if ($query === null) {
@@ -84,7 +84,7 @@ final class InMemoryTransportAdapter implements TransportAdapterInterface
         return $count;
     }
 
-    #[\Override]
+    #[Override]
     public function list(int $offset = 0, int $limit = 50, ?string $query = null): array
     {
         $regex = $query !== null ? LikePatternToRegex::convert($query) : null;
@@ -99,10 +99,10 @@ final class InMemoryTransportAdapter implements TransportAdapterInterface
         }
         $sliced = array_slice($matches, $offset, $limit);
 
-        return array_map(fn (Envelope $e): MessageDescriptor => $this->envelopeToDescriptor($e), $sliced);
+        return array_map(fn(Envelope $e): MessageDescriptor => $this->envelopeToDescriptor($e), $sliced);
     }
 
-    #[\Override]
+    #[Override]
     public function find(string $id): ?MessageDescriptor
     {
         $envelope = $this->findEnvelope($id);
@@ -110,7 +110,7 @@ final class InMemoryTransportAdapter implements TransportAdapterInterface
         return $envelope !== null ? $this->envelopeToDescriptor($envelope) : null;
     }
 
-    #[\Override]
+    #[Override]
     public function findEnvelope(string $id): ?Envelope
     {
         foreach ($this->pending() as $envelope) {
@@ -122,7 +122,7 @@ final class InMemoryTransportAdapter implements TransportAdapterInterface
         return null;
     }
 
-    #[\Override]
+    #[Override]
     public function deleteOne(string $id): bool
     {
         $envelope = $this->findEnvelope($id);
@@ -140,7 +140,7 @@ final class InMemoryTransportAdapter implements TransportAdapterInterface
         return true;
     }
 
-    #[\Override]
+    #[Override]
     public function purge(): int
     {
         $count = 0;

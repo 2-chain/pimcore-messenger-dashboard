@@ -6,6 +6,11 @@ namespace TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter;
 
 use Symfony\Component\Messenger\Transport\Receiver\MessageCountAwareInterface;
 use Symfony\Component\Messenger\Transport\Receiver\ReceiverInterface;
+use DateTimeImmutable;
+use DateTimeZone;
+use LogicException;
+use Override;
+use ReflectionObject;
 
 /**
  * Adapter for Symfony's Redis transport. Redis Streams DO support read-only
@@ -32,27 +37,26 @@ final class RedisTransportAdapter implements TransportAdapterInterface
      *
      * @var array{client: object, stream: string}|null|false
      */
-    private array|null|false $access = null;
+    private array|false|null $access = null;
 
     public function __construct(
         private readonly string $name,
         private readonly ReceiverInterface $receiver,
-    ) {
-    }
+    ) {}
 
-    #[\Override]
+    #[Override]
     public function name(): string
     {
         return $this->name;
     }
 
-    #[\Override]
+    #[Override]
     public function type(): string
     {
         return 'redis';
     }
 
-    #[\Override]
+    #[Override]
     public function capabilities(): Capabilities
     {
         $hasAccess = $this->resolveAccess() !== null;
@@ -67,7 +71,7 @@ final class RedisTransportAdapter implements TransportAdapterInterface
         );
     }
 
-    #[\Override]
+    #[Override]
     public function count(): int
     {
         if (!$this->receiver instanceof MessageCountAwareInterface) {
@@ -77,13 +81,13 @@ final class RedisTransportAdapter implements TransportAdapterInterface
         return $this->receiver->getMessageCount();
     }
 
-    #[\Override]
+    #[Override]
     public function countListable(?string $query = null): int
     {
-        throw new \LogicException('Redis transport does not support listing messages.');
+        throw new LogicException('Redis transport does not support listing messages.');
     }
 
-    #[\Override]
+    #[Override]
     public function list(int $offset = 0, int $limit = 50, ?string $query = null): array
     {
         // Redis adapter ignores $query — XRANGE doesn't support a substring
@@ -101,13 +105,15 @@ final class RedisTransportAdapter implements TransportAdapterInterface
 
         $descriptors = [];
         foreach ($sliced as $entryId => $fields) {
-            $descriptors[] = $this->buildDescriptor((string) $entryId, is_array($fields) ? $fields : []);
+            // `xrange()` declares `array<string, array<string, mixed>>`, so
+            // each $fields is already an array — no defensive coercion needed.
+            $descriptors[] = $this->buildDescriptor((string) $entryId, $fields);
         }
 
         return $descriptors;
     }
 
-    #[\Override]
+    #[Override]
     public function find(string $id): ?MessageDescriptor
     {
         $access = $this->resolveAccess();
@@ -132,13 +138,13 @@ final class RedisTransportAdapter implements TransportAdapterInterface
      * Doctrine by default. If a user wired Redis as the failed transport,
      * they can still use the bridge's own `messenger:failed:retry` command.
      */
-    #[\Override]
+    #[Override]
     public function findEnvelope(string $id): ?\Symfony\Component\Messenger\Envelope
     {
-        throw new \LogicException('Redis transport adapter does not expose envelopes; use messenger:failed:retry for Redis-backed failed transports.');
+        throw new LogicException('Redis transport adapter does not expose envelopes; use messenger:failed:retry for Redis-backed failed transports.');
     }
 
-    #[\Override]
+    #[Override]
     public function deleteOne(string $id): bool
     {
         $access = $this->resolveAccess();
@@ -150,7 +156,7 @@ final class RedisTransportAdapter implements TransportAdapterInterface
         return $deleted > 0;
     }
 
-    #[\Override]
+    #[Override]
     public function purge(): int
     {
         // Prefer the bridge's own purge if present (handles consumer groups
@@ -160,7 +166,7 @@ final class RedisTransportAdapter implements TransportAdapterInterface
         }
         $access = $this->resolveAccess();
         if ($access === null) {
-            throw new \LogicException('Redis transport adapter cannot purge — connection access unavailable.');
+            throw new LogicException('Redis transport adapter cannot purge — connection access unavailable.');
         }
         // XTRIM MAXLEN 0 empties the stream.
         $this->callRedis($access['client'], 'xTrim', [$access['stream'], 0]);
@@ -203,6 +209,7 @@ final class RedisTransportAdapter implements TransportAdapterInterface
     }
 
     /**
+     * @param array{client: object, stream: string} $access
      * @return array<string, array<string, mixed>>
      */
     private function xrange(array $access, int $limit): array
@@ -212,6 +219,7 @@ final class RedisTransportAdapter implements TransportAdapterInterface
         return is_array($result) ? $result : [];
     }
 
+    /** @param array<int, mixed> $args */
     private function callRedis(object $client, string $method, array $args): mixed
     {
         // phpredis exposes XRANGE as `xRange`; Predis as `xrange`. Try both.
@@ -222,7 +230,7 @@ final class RedisTransportAdapter implements TransportAdapterInterface
         if (method_exists($client, $lower)) {
             return $client->$lower(...$args);
         }
-        throw new \LogicException(sprintf('Redis client (%s) does not expose %s().', $client::class, $method));
+        throw new LogicException(sprintf('Redis client (%s) does not expose %s().', $client::class, $method));
     }
 
     /**
@@ -258,20 +266,20 @@ final class RedisTransportAdapter implements TransportAdapterInterface
      * Redis stream IDs are "<ms-since-epoch>-<seq>", so the timestamp is
      * embedded in the id itself.
      */
-    private function entryIdToDate(string $entryId): \DateTimeImmutable
+    private function entryIdToDate(string $entryId): DateTimeImmutable
     {
         if (preg_match('/^(\d+)-/', $entryId, $m) === 1) {
             $seconds = (int) floor(((int) $m[1]) / 1000);
 
-            return (new \DateTimeImmutable('@' . $seconds))->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+            return (new DateTimeImmutable('@' . $seconds))->setTimezone(new DateTimeZone(date_default_timezone_get()));
         }
 
-        return new \DateTimeImmutable();
+        return new DateTimeImmutable();
     }
 
     private function extractPrivateProperty(object $obj, string $property): mixed
     {
-        $reflection = new \ReflectionObject($obj);
+        $reflection = new ReflectionObject($obj);
         if (!$reflection->hasProperty($property)) {
             return null;
         }

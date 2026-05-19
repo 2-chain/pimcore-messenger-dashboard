@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Command;
@@ -8,6 +9,7 @@ use Symfony\Component\Console\Tester\CommandTester;
 use TwoChain\PimcoreMessengerDashboardBundle\Command\PruneStatsCommand;
 use TwoChain\PimcoreMessengerDashboardBundle\Entity\StatsRecord;
 use TwoChain\PimcoreMessengerDashboardBundle\Repository\StatsRecordRepository;
+use DateTimeImmutable;
 
 final class PruneStatsCommandTest extends TestCase
 {
@@ -22,11 +24,11 @@ final class PruneStatsCommandTest extends TestCase
         $this->assertSame(0, $exit);
         $this->assertNotNull($repo->lastPruneCutoff);
         $this->assertGreaterThanOrEqual(
-            (new \DateTimeImmutable('-30 days -1 minute'))->getTimestamp(),
+            (new DateTimeImmutable('-30 days -1 minute'))->getTimestamp(),
             $repo->lastPruneCutoff->getTimestamp(),
         );
         $this->assertLessThanOrEqual(
-            (new \DateTimeImmutable('-30 days +1 minute'))->getTimestamp(),
+            (new DateTimeImmutable('-30 days +1 minute'))->getTimestamp(),
             $repo->lastPruneCutoff->getTimestamp(),
         );
         $this->assertStringContainsString('Deleted 17 row', $tester->getDisplay());
@@ -39,7 +41,7 @@ final class PruneStatsCommandTest extends TestCase
 
         $tester->execute(['--retention-days' => '7']);
 
-        $expected = (new \DateTimeImmutable('-7 days'))->getTimestamp();
+        $expected = (new DateTimeImmutable('-7 days'))->getTimestamp();
         $this->assertNotNull($repo->lastPruneCutoff);
         $this->assertEqualsWithDelta(
             $expected,
@@ -81,7 +83,7 @@ final class PruneStatsCommandTest extends TestCase
  */
 final class StubStatsRecordRepository extends StatsRecordRepository
 {
-    public ?\DateTimeImmutable $lastPruneCutoff = null;
+    public ?DateTimeImmutable $lastPruneCutoff = null;
     public int $pruneResult = 0;
     public int $countOlderThanResult = 0;
 
@@ -91,28 +93,26 @@ final class StubStatsRecordRepository extends StatsRecordRepository
         // metadata); we only need a Doctrine-shaped duck.
     }
 
-    public function record(StatsRecord $rec): void
-    {
-    }
+    public function record(StatsRecord $rec): void {}
 
-    public function prune(\DateTimeImmutable $before, int $batchSize = 10000): int
+    public function prune(DateTimeImmutable $before, int $batchSize = 10000): int
     {
         $this->lastPruneCutoff = $before;
 
         return $this->pruneResult;
     }
 
-    public function lastHandledAt(string $transport): ?\DateTimeImmutable
+    public function lastHandledAt(string $transport): ?DateTimeImmutable
     {
         return null;
     }
 
-    public function countSplit(string $transport, \DateTimeImmutable $since): array
+    public function countSplit(string $transport, DateTimeImmutable $since): array
     {
         return ['handled' => 0, 'failed' => 0];
     }
 
-    public function countOlderThan(\DateTimeImmutable $before): int
+    public function countOlderThan(DateTimeImmutable $before): int
     {
         return $this->countOlderThanResult;
     }

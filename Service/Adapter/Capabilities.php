@@ -19,8 +19,7 @@ final readonly class Capabilities
         public bool $canBulkDelete = false,
         public bool $canPurge = false,
         public bool $canRequeue = false,
-    ) {
-    }
+    ) {}
 
     public static function countOnly(): self
     {

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Service;
@@ -26,7 +27,7 @@ final class TransportAdapterFactoryTest extends TestCase
     public function testInMemoryTransportMapsToDedicatedAdapter(): void
     {
         $locator = new ServiceLocator([
-            'in_mem' => fn () => new InMemoryTransport(),
+            'in_mem' => fn() => new InMemoryTransport(),
         ]);
         $factory = new TransportAdapterFactory($locator);
 
@@ -39,7 +40,7 @@ final class TransportAdapterFactoryTest extends TestCase
     public function testSyncTransportMapsToDefaultAdapterWithSyncType(): void
     {
         $locator = new ServiceLocator([
-            'sync_t' => fn () => new SyncTransport(new class () implements \Symfony\Component\Messenger\MessageBusInterface {
+            'sync_t' => fn() => new SyncTransport(new class implements \Symfony\Component\Messenger\MessageBusInterface {
                 public function dispatch(object $message, array $stamps = []): Envelope
                 {
                     return new Envelope($message);
@@ -58,7 +59,7 @@ final class TransportAdapterFactoryTest extends TestCase
     public function testListableReceiverFallsBackToGenericListableAdapter(): void
     {
         $locator = new ServiceLocator([
-            'generic' => fn () => new GenericListableReceiver(),
+            'generic' => fn() => new GenericListableReceiver(),
         ]);
         $factory = new TransportAdapterFactory($locator);
 
@@ -71,7 +72,7 @@ final class TransportAdapterFactoryTest extends TestCase
     public function testUnknownReceiverFallsBackToDefaultAdapter(): void
     {
         $locator = new ServiceLocator([
-            'mystery' => fn () => new GenericPlainReceiver(),
+            'mystery' => fn() => new GenericPlainReceiver(),
         ]);
         $factory = new TransportAdapterFactory($locator);
 
@@ -84,7 +85,7 @@ final class TransportAdapterFactoryTest extends TestCase
     public function testAdaptersAreCachedPerName(): void
     {
         $locator = new ServiceLocator([
-            't' => fn () => new GenericListableReceiver(),
+            't' => fn() => new GenericListableReceiver(),
         ]);
         $factory = new TransportAdapterFactory($locator);
 
@@ -112,13 +113,9 @@ final class GenericListableReceiver implements ListableReceiverInterface
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 }
 
 final class GenericPlainReceiver implements ReceiverInterface
@@ -128,11 +125,7 @@ final class GenericPlainReceiver implements ReceiverInterface
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 }

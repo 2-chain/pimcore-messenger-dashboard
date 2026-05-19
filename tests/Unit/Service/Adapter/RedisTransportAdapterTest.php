@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Service\Adapter;
@@ -8,6 +9,7 @@ use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Transport\Receiver\MessageCountAwareInterface;
 use Symfony\Component\Messenger\Transport\Receiver\ReceiverInterface;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\RedisTransportAdapter;
+use LogicException;
 
 /**
  * Real Redis access goes through reflection on the bridge's internal
@@ -75,7 +77,7 @@ final class RedisTransportAdapterTest extends TestCase
     {
         $adapter = new RedisTransportAdapter('stream', new RedisBareReceiver());
 
-        $this->expectException(\LogicException::class);
+        $this->expectException(LogicException::class);
         $adapter->countListable();
     }
 
@@ -83,7 +85,7 @@ final class RedisTransportAdapterTest extends TestCase
     {
         $adapter = new RedisTransportAdapter('stream', new RedisBareReceiver());
 
-        $this->expectException(\LogicException::class);
+        $this->expectException(LogicException::class);
         $adapter->findEnvelope('1-0');
     }
 
@@ -101,7 +103,7 @@ final class RedisTransportAdapterTest extends TestCase
     {
         $adapter = new RedisTransportAdapter('stream', new RedisBareReceiver());
 
-        $this->expectException(\LogicException::class);
+        $this->expectException(LogicException::class);
         $adapter->purge();
     }
 }
@@ -113,33 +115,23 @@ final class RedisBareReceiver implements ReceiverInterface
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 }
 
 final class RedisCountAwareReceiver implements ReceiverInterface, MessageCountAwareInterface
 {
-    public function __construct(private readonly int $count)
-    {
-    }
+    public function __construct(private readonly int $count) {}
 
     public function get(): iterable
     {
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 
     public function getMessageCount(): int
     {
@@ -156,13 +148,9 @@ final class RedisReceiverWithPurge implements ReceiverInterface
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 
     public function purge(): int
     {

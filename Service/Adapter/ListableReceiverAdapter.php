@@ -7,6 +7,8 @@ namespace TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter;
 use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\Transport\Receiver\ListableReceiverInterface;
 use Symfony\Component\Messenger\Transport\Receiver\MessageCountAwareInterface;
+use LogicException;
+use Override;
 
 /**
  * Generic listable-transport adapter. Works with anything that implements
@@ -25,22 +27,21 @@ class ListableReceiverAdapter implements TransportAdapterInterface
         protected readonly string $name,
         protected readonly ListableReceiverInterface $receiver,
         protected readonly string $type = 'unknown',
-    ) {
-    }
+    ) {}
 
-    #[\Override]
+    #[Override]
     public function name(): string
     {
         return $this->name;
     }
 
-    #[\Override]
+    #[Override]
     public function type(): string
     {
         return $this->type;
     }
 
-    #[\Override]
+    #[Override]
     public function capabilities(): Capabilities
     {
         return new Capabilities(
@@ -51,7 +52,7 @@ class ListableReceiverAdapter implements TransportAdapterInterface
         );
     }
 
-    #[\Override]
+    #[Override]
     public function count(): int
     {
         if (!$this->receiver instanceof MessageCountAwareInterface) {
@@ -61,7 +62,7 @@ class ListableReceiverAdapter implements TransportAdapterInterface
         return $this->receiver->getMessageCount();
     }
 
-    #[\Override]
+    #[Override]
     public function countListable(?string $query = null): int
     {
         $count = 0;
@@ -76,7 +77,7 @@ class ListableReceiverAdapter implements TransportAdapterInterface
         return $count;
     }
 
-    #[\Override]
+    #[Override]
     public function list(int $offset = 0, int $limit = 50, ?string $query = null): array
     {
         $regex = $query !== null ? LikePatternToRegex::convert($query) : null;
@@ -98,7 +99,7 @@ class ListableReceiverAdapter implements TransportAdapterInterface
         return array_map([$this, 'envelopeToDescriptor'], $sliced);
     }
 
-    #[\Override]
+    #[Override]
     public function find(string $id): ?MessageDescriptor
     {
         $envelope = $this->findEnvelope($id);
@@ -109,13 +110,13 @@ class ListableReceiverAdapter implements TransportAdapterInterface
         return $this->envelopeToDescriptor($envelope);
     }
 
-    #[\Override]
+    #[Override]
     public function findEnvelope(string $id): ?Envelope
     {
         return $this->receiver->find($id);
     }
 
-    #[\Override]
+    #[Override]
     public function deleteOne(string $id): bool
     {
         $envelope = $this->findEnvelope($id);
@@ -128,10 +129,10 @@ class ListableReceiverAdapter implements TransportAdapterInterface
         return true;
     }
 
-    #[\Override]
+    #[Override]
     public function purge(): int
     {
-        throw new \LogicException(sprintf('Transport "%s" does not support purge in the generic adapter.', $this->name));
+        throw new LogicException(sprintf('Transport "%s" does not support purge in the generic adapter.', $this->name));
     }
 
     /**

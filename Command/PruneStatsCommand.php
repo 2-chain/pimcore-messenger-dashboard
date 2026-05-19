@@ -11,6 +11,8 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use TwoChain\PimcoreMessengerDashboardBundle\Repository\StatsRecordRepository;
+use DateTimeImmutable;
+use Override;
 
 #[AsCommand(
     name: 'twochain:messenger-dashboard:stats:prune',
@@ -25,7 +27,7 @@ final class PruneStatsCommand extends Command
         parent::__construct();
     }
 
-    #[\Override]
+    #[Override]
     protected function configure(): void
     {
         $this
@@ -43,7 +45,7 @@ final class PruneStatsCommand extends Command
             );
     }
 
-    #[\Override]
+    #[Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
@@ -55,7 +57,7 @@ final class PruneStatsCommand extends Command
             return Command::FAILURE;
         }
 
-        $cutoff = new \DateTimeImmutable(sprintf('-%d days', $retentionDays));
+        $cutoff = new DateTimeImmutable(sprintf('-%d days', $retentionDays));
         $io->writeln(sprintf('Pruning stats rows with handled_at < <info>%s</info>', $cutoff->format('Y-m-d H:i:s')));
 
         if ($input->getOption('dry-run')) {

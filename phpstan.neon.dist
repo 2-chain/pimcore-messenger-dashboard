@@ -1,0 +1,24 @@
+parameters:
+    level: 6
+    paths:
+        - Command
+        - Controller
+        - DependencyInjection
+        - Entity
+        - EventSubscriber
+        - Repository
+        - Service
+        - Stamp
+        - Installer.php
+        - PimcoreMessengerDashboardBundle.php
+    ignoreErrors:
+        # phpstan-symfony's Configuration analyser is too tight about the
+        # generic resolution of `NodeBuilder<ArrayNodeDefinition>::arrayNode()`
+        # — the call works fine at runtime (it's the documented Symfony API)
+        # and is exercised by ConfigurationTest.
+        -
+            message: '#Call to method arrayNode\(\) on an unknown class Symfony\\Component\\Config\\Definition\\Builder\\NodeBuilder#'
+            path: DependencyInjection/Configuration.php
+
+includes:
+    - vendor/phpstan/phpstan-symfony/extension.neon

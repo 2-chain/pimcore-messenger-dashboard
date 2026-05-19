@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Service;
@@ -16,10 +17,10 @@ final class TransportRegistryTest extends TestCase
     public function testNamesFiltersOutDottedServiceIdsAndSorts(): void
     {
         $locator = new ServiceLocator([
-            'pimcore_core' => fn () => new RegistryStubReceiver(),
-            'messenger.transport.pimcore_core' => fn () => new RegistryStubReceiver(),
-            'aaa_first' => fn () => new RegistryStubReceiver(),
-            'messenger.bus.default' => fn () => new RegistryStubReceiver(),
+            'pimcore_core' => fn() => new RegistryStubReceiver(),
+            'messenger.transport.pimcore_core' => fn() => new RegistryStubReceiver(),
+            'aaa_first' => fn() => new RegistryStubReceiver(),
+            'messenger.bus.default' => fn() => new RegistryStubReceiver(),
         ]);
         $factory = new TransportAdapterFactory($locator);
 
@@ -31,7 +32,7 @@ final class TransportRegistryTest extends TestCase
     public function testNamesAreCachedAcrossCalls(): void
     {
         $locator = new ServiceLocator([
-            'a' => fn () => new RegistryStubReceiver(),
+            'a' => fn() => new RegistryStubReceiver(),
         ]);
         $registry = new TransportRegistry($locator, new TransportAdapterFactory($locator));
 
@@ -44,7 +45,7 @@ final class TransportRegistryTest extends TestCase
     public function testAdapterDelegatesToFactory(): void
     {
         $locator = new ServiceLocator([
-            'queue_a' => fn () => new RegistryStubReceiver(),
+            'queue_a' => fn() => new RegistryStubReceiver(),
         ]);
         $factory = new TransportAdapterFactory($locator);
         $registry = new TransportRegistry($locator, $factory);
@@ -58,8 +59,8 @@ final class TransportRegistryTest extends TestCase
     public function testAdaptersIteratesAllNames(): void
     {
         $locator = new ServiceLocator([
-            'queue_a' => fn () => new RegistryStubReceiver(),
-            'queue_b' => fn () => new RegistryStubReceiver(),
+            'queue_a' => fn() => new RegistryStubReceiver(),
+            'queue_b' => fn() => new RegistryStubReceiver(),
         ]);
         $registry = new TransportRegistry($locator, new TransportAdapterFactory($locator));
 
@@ -89,11 +90,7 @@ final class RegistryStubReceiver implements ListableReceiverInterface
         return [];
     }
 
-    public function ack(Envelope $envelope): void
-    {
-    }
+    public function ack(Envelope $envelope): void {}
 
-    public function reject(Envelope $envelope): void
-    {
-    }
+    public function reject(Envelope $envelope): void {}
 }

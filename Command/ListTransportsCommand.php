@@ -11,6 +11,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\TransportRegistry;
+use Override;
+use Throwable;
 
 #[AsCommand(
     name: 'twochain:messenger-dashboard:debug:transports',
@@ -23,7 +25,7 @@ final class ListTransportsCommand extends Command
         parent::__construct();
     }
 
-    #[\Override]
+    #[Override]
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         new SymfonyStyle($input, $output);
@@ -35,7 +37,7 @@ final class ListTransportsCommand extends Command
             $caps = $adapter->capabilities();
             try {
                 $count = (string) $adapter->count();
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $count = '<error>err: ' . $e->getMessage() . '</error>';
             }
             $table->addRow([

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter;
 
+use DateTimeImmutable;
+use DateTimeInterface;
+
 /**
  * Adapter-neutral description of a single in-flight message, returned by
  * TransportAdapterInterface::list() and ::find(). The controllers serialize
@@ -17,15 +20,14 @@ final readonly class MessageDescriptor
     public function __construct(
         public string $id,
         public string $messageClass,
-        public \DateTimeImmutable $createdAt,
+        public DateTimeImmutable $createdAt,
         public ?int $retryCount = null,
         /** @var array<string, string|int|bool|null> arbitrary transport headers/stamps in flat form */
         public array $headers = [],
         public ?string $bodyPreview = null,
         public ?string $failureClass = null,
         public ?string $failureMessage = null,
-    ) {
-    }
+    ) {}
 
     /** @return array<string, mixed> */
     public function toArray(): array
@@ -33,7 +35,7 @@ final readonly class MessageDescriptor
         return [
             'id' => $this->id,
             'messageClass' => $this->messageClass,
-            'createdAt' => $this->createdAt->format(\DateTimeInterface::ATOM),
+            'createdAt' => $this->createdAt->format(DateTimeInterface::ATOM),
             'retryCount' => $this->retryCount,
             'headers' => $this->headers,
             'bodyPreview' => $this->bodyPreview,

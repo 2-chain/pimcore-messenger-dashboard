@@ -6,6 +6,7 @@ namespace TwoChain\PimcoreMessengerDashboardBundle\DependencyInjection\Compiler;
 
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Override;
 
 /**
  * Resolves which transport the framework treats as the default failure
@@ -29,7 +30,7 @@ final class ResolveFailedTransportNamePass implements CompilerPassInterface
     private const string ALIAS = 'messenger.failure_transports.default';
     private const string TRANSPORT_PREFIX = 'messenger.transport.';
 
-    #[\Override]
+    #[Override]
     public function process(ContainerBuilder $container): void
     {
         $name = null;

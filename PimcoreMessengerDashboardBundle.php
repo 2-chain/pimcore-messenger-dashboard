@@ -11,17 +11,18 @@ use Pimcore\Extension\Bundle\Installer\InstallerInterface;
 use Pimcore\Extension\Bundle\PimcoreBundleAdminClassicInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
+use Override;
 
 final class PimcoreMessengerDashboardBundle extends AbstractPimcoreBundle implements PimcoreBundleAdminClassicInterface
 {
-    #[\Override]
+    #[Override]
     public function build(ContainerBuilder $container): void
     {
         parent::build($container);
         $container->addCompilerPass(new ResolveFailedTransportNamePass());
     }
 
-    #[\Override]
+    #[Override]
     public function getJsPaths(): array
     {
         return [
@@ -30,7 +31,7 @@ final class PimcoreMessengerDashboardBundle extends AbstractPimcoreBundle implem
         ];
     }
 
-    #[\Override]
+    #[Override]
     public function getCssPaths(): array
     {
         return [
@@ -38,30 +39,31 @@ final class PimcoreMessengerDashboardBundle extends AbstractPimcoreBundle implem
         ];
     }
 
-    #[\Override]
+    #[Override]
     public function getEditmodeJsPaths(): array
     {
         return [];
     }
 
-    #[\Override]
+    #[Override]
     public function getEditmodeCssPaths(): array
     {
         return [];
     }
 
+    /** @return list<string> */
     public function getInstallableUserPermissions(): array
     {
         return Installer::PERMISSION_KEYS;
     }
 
-    #[\Override]
+    #[Override]
     public function getInstaller(): ?InstallerInterface
     {
         return $this->container->get(Installer::class);
     }
 
-    #[\Override]
+    #[Override]
     public function getContainerExtension(): ?ExtensionInterface
     {
         return new TwoChainMessengerDashboardExtension();

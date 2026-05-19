@@ -1,16 +1,19 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Service\Adapter;
 
 use PHPUnit\Framework\TestCase;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\MessageDescriptor;
+use DateTimeImmutable;
+use RuntimeException;
 
 final class MessageDescriptorTest extends TestCase
 {
     public function testToArraySerializesAllFields(): void
     {
-        $createdAt = new \DateTimeImmutable('2026-05-19T12:34:56+00:00');
+        $createdAt = new DateTimeImmutable('2026-05-19T12:34:56+00:00');
         $descriptor = new MessageDescriptor(
             id: 'msg-42',
             messageClass: 'App\\Message\\ImportProduct',
@@ -18,7 +21,7 @@ final class MessageDescriptorTest extends TestCase
             retryCount: 2,
             headers: ['sentFromTransport' => 'pim_import', 'manualRequeues' => 1],
             bodyPreview: '{"sku":"ABC"}',
-            failureClass: \RuntimeException::class,
+            failureClass: RuntimeException::class,
             failureMessage: 'boom',
         );
 
@@ -29,7 +32,7 @@ final class MessageDescriptorTest extends TestCase
             'retryCount' => 2,
             'headers' => ['sentFromTransport' => 'pim_import', 'manualRequeues' => 1],
             'bodyPreview' => '{"sku":"ABC"}',
-            'failureClass' => \RuntimeException::class,
+            'failureClass' => RuntimeException::class,
             'failureMessage' => 'boom',
         ], $descriptor->toArray());
     }
@@ -39,7 +42,7 @@ final class MessageDescriptorTest extends TestCase
         $descriptor = new MessageDescriptor(
             id: '1',
             messageClass: 'Foo',
-            createdAt: new \DateTimeImmutable('2026-01-01T00:00:00+00:00'),
+            createdAt: new DateTimeImmutable('2026-01-01T00:00:00+00:00'),
         );
 
         $array = $descriptor->toArray();

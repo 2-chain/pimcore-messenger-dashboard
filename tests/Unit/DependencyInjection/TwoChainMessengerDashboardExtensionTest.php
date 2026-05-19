@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\DependencyInjection;
@@ -146,13 +147,9 @@ final class TwoChainMessengerDashboardExtensionTest extends TestCase
 
 final class FakeExtension implements ExtensionInterface
 {
-    public function __construct(private readonly string $alias)
-    {
-    }
+    public function __construct(private readonly string $alias) {}
 
-    public function load(array $configs, ContainerBuilder $container): void
-    {
-    }
+    public function load(array $configs, ContainerBuilder $container): void {}
 
     public function getNamespace(): string
     {

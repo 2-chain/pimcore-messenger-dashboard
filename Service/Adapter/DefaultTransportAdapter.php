@@ -6,6 +6,8 @@ namespace TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter;
 
 use Symfony\Component\Messenger\Transport\Receiver\MessageCountAwareInterface;
 use Symfony\Component\Messenger\Transport\Receiver\ReceiverInterface;
+use LogicException;
+use Override;
 
 /**
  * Count-only fallback adapter. Used for any receiver that doesn't implement
@@ -21,28 +23,27 @@ class DefaultTransportAdapter implements TransportAdapterInterface
         protected readonly string $name,
         protected readonly ReceiverInterface $receiver,
         protected readonly string $type = 'unknown',
-    ) {
-    }
+    ) {}
 
-    #[\Override]
+    #[Override]
     public function name(): string
     {
         return $this->name;
     }
 
-    #[\Override]
+    #[Override]
     public function type(): string
     {
         return $this->type;
     }
 
-    #[\Override]
+    #[Override]
     public function capabilities(): Capabilities
     {
         return new Capabilities(canCount: $this->receiver instanceof MessageCountAwareInterface);
     }
 
-    #[\Override]
+    #[Override]
     public function count(): int
     {
         if (!$this->receiver instanceof MessageCountAwareInterface) {
@@ -52,39 +53,39 @@ class DefaultTransportAdapter implements TransportAdapterInterface
         return $this->receiver->getMessageCount();
     }
 
-    #[\Override]
+    #[Override]
     public function countListable(?string $query = null): int
     {
-        throw new \LogicException(sprintf('Transport "%s" does not support listing messages.', $this->name));
+        throw new LogicException(sprintf('Transport "%s" does not support listing messages.', $this->name));
     }
 
-    #[\Override]
+    #[Override]
     public function list(int $offset = 0, int $limit = 50, ?string $query = null): array
     {
-        throw new \LogicException(sprintf('Transport "%s" does not support listing messages.', $this->name));
+        throw new LogicException(sprintf('Transport "%s" does not support listing messages.', $this->name));
     }
 
-    #[\Override]
+    #[Override]
     public function find(string $id): ?MessageDescriptor
     {
-        throw new \LogicException(sprintf('Transport "%s" does not support per-message inspection.', $this->name));
+        throw new LogicException(sprintf('Transport "%s" does not support per-message inspection.', $this->name));
     }
 
-    #[\Override]
+    #[Override]
     public function findEnvelope(string $id): ?\Symfony\Component\Messenger\Envelope
     {
-        throw new \LogicException(sprintf('Transport "%s" does not support per-message inspection.', $this->name));
+        throw new LogicException(sprintf('Transport "%s" does not support per-message inspection.', $this->name));
     }
 
-    #[\Override]
+    #[Override]
     public function deleteOne(string $id): bool
     {
-        throw new \LogicException(sprintf('Transport "%s" does not support deleting individual messages.', $this->name));
+        throw new LogicException(sprintf('Transport "%s" does not support deleting individual messages.', $this->name));
     }
 
-    #[\Override]
+    #[Override]
     public function purge(): int
     {
-        throw new \LogicException(sprintf('Transport "%s" does not support purge.', $this->name));
+        throw new LogicException(sprintf('Transport "%s" does not support purge.', $this->name));
     }
 }

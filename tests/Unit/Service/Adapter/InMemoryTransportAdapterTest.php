@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace TwoChain\PimcoreMessengerDashboardBundle\Tests\Unit\Service\Adapter;
@@ -59,7 +60,7 @@ final class InMemoryTransportAdapterTest extends TestCase
         $this->assertSame(InMemoryMessage::class, $listed[0]->messageClass);
         $idA = (string) $a->last(TransportMessageIdStamp::class)?->getId();
         $idB = (string) $b->last(TransportMessageIdStamp::class)?->getId();
-        $this->assertSame([$idA, $idB], array_map(fn ($d) => $d->id, $listed));
+        $this->assertSame([$idA, $idB], array_map(fn($d) => $d->id, $listed));
     }
 
     public function testListWithQueryFiltersByBody(): void
@@ -169,7 +170,5 @@ final class InMemoryTransportAdapterTest extends TestCase
 
 final class InMemoryMessage
 {
-    public function __construct(public readonly string $payload)
-    {
-    }
+    public function __construct(public readonly string $payload) {}
 }
