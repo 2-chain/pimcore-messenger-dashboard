@@ -9,7 +9,7 @@
         "source": "https://github.com/2-chain/pimcore-messenger-dashboard"
     },
     "require": {
-        "php": "^8.2",
+        "php": "^8.3",
         "pimcore/pimcore": "^11.0 || ^12.0",
         "symfony/messenger": "^6.4 || ^7.0",
         "doctrine/orm": "^2.17 || ^3.0",

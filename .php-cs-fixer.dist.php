@@ -5,8 +5,8 @@ declare(strict_types=1);
 /**
  * PHP-CS-Fixer config for the bundle.
  *
- * Symfony preset on top of PHP 8.2 baseline + the `:risky` variants that
- * are safe for a strictly-typed PHP 8.2+ codebase (final on classes,
+ * Symfony preset on top of PHP 8.3 baseline + the `:risky` variants that
+ * are safe for a strictly-typed PHP 8.3+ codebase (final on classes,
  * declare(strict_types) on every file, etc.).
  *
  * CI runs in dry-run mode: `vendor/bin/php-cs-fixer fix --dry-run --diff`.
@@ -37,7 +37,7 @@ return (new PhpCsFixer\Config())
     ->setRules([
         '@PER-CS' => true,
         '@PER-CS:risky' => true,
-        '@PHP82Migration' => true,
+        '@PHP83Migration' => true,
         '@PHP82Migration:risky' => true,
         // Project-specific tweaks layered on top of the baseline.
         'declare_strict_types' => true,

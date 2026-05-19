@@ -103,7 +103,7 @@ if it implements just `MessageCountAwareInterface`.
 
 ## Requirements
 
-- PHP 8.2+
+- PHP 8.3+
 - Pimcore 11.x or 12.x with the Classic Admin UI bundle enabled
 - Doctrine ORM 2.17+ or 3.x (Pimcore 12 ships ORM 3)
 - MariaDB 10.11+ or MySQL 8.0+ if you use the audit subsystem
