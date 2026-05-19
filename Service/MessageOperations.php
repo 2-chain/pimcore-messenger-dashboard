@@ -20,11 +20,11 @@ use Symfony\Component\Messenger\Stamp\TransportNamesStamp;
  * which matches the spec section 8.4 — partial failure is the norm for
  * bulk operations.
  */
-final readonly class MessageOperations
+class MessageOperations
 {
     public function __construct(
-        private TransportRegistry $registry,
-        private MessageBusInterface $bus,
+        private readonly TransportRegistry $registry,
+        private readonly MessageBusInterface $bus,
     ) {
     }
 

@@ -1,0 +1,26 @@
+# Composer / dependencies
+/vendor/
+# Libraries don't commit lock files — only the consumer project's lock file matters.
+/composer.lock
+
+# PHPUnit / test caches
+/.phpunit.cache/
+/.phpunit.result.cache
+/phpunit.xml
+
+# Static analysis caches
+/.phpstan.cache/
+/.php-cs-fixer.cache
+
+# IDE / editor local config
+/.idea/
+/.vscode/
+*.swp
+*~
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Local AI tooling state
+/.claude/

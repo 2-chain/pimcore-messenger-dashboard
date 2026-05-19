@@ -27,7 +27,7 @@ use Symfony\Component\Routing\Annotation\Route;
  * Symfony 403 → standard JSON error envelope on the way out.
  */
 #[Route('/admin/messenger-dashboard', name: 'twochain_messenger_dashboard_')]
-final class DashboardController extends AbstractController
+class DashboardController extends AbstractController
 {
     /**
      * Server-side cap on how many failed envelopes we materialize when the
@@ -457,7 +457,7 @@ final class DashboardController extends AbstractController
         ], $status);
     }
 
-    private function currentUser(Request $request): ?\Pimcore\Model\User
+    protected function currentUser(Request $request): ?\Pimcore\Model\User
     {
         // Pimcore's session-based admin authentication. Returns null for
         // unauthenticated requests; the admin firewall will already have

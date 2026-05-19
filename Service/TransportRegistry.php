@@ -14,7 +14,7 @@ use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\TransportAdapterInt
  * provided services list. The framework bundle wires up one entry per
  * transport defined under framework.messenger.transports.*.
  */
-final class TransportRegistry
+class TransportRegistry
 {
     /** @var list<string>|null */
     private ?array $names = null;

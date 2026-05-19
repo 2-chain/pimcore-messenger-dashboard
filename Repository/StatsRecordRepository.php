@@ -28,6 +28,18 @@ class StatsRecordRepository extends ServiceEntityRepository implements StatsReco
     }
 
     /**
+     * Count rows with handled_at < $before. Used by the prune command's
+     * --dry-run path.
+     */
+    public function countOlderThan(\DateTimeImmutable $before): int
+    {
+        return (int) $this->getEntityManager()->getConnection()->fetchOne(
+            'SELECT COUNT(*) FROM messenger_dashboard_stats WHERE handled_at < ?',
+            [$before->format('Y-m-d H:i:s')],
+        );
+    }
+
+    /**
      * Bulk delete rows with handled_at < $before, in batches.
      * Returns total rows deleted.
      */

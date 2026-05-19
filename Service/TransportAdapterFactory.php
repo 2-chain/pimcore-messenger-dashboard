@@ -10,6 +10,7 @@ use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\AmqpTransportAdapte
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\BeanstalkdTransportAdapter;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\DefaultTransportAdapter;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\DoctrineTransportAdapter;
+use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\InMemoryTransportAdapter;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\ListableReceiverAdapter;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\RedisTransportAdapter;
 use TwoChain\PimcoreMessengerDashboardBundle\Service\Adapter\TransportAdapterInterface;
@@ -65,7 +66,7 @@ final class TransportAdapterFactory
             return new AmazonSqsTransportAdapter($name, $receiver);
         }
         if ($receiver instanceof InMemoryTransport) {
-            return new ListableReceiverAdapter($name, $receiver, 'in_memory');
+            return new InMemoryTransportAdapter($name, $receiver);
         }
         if ($receiver instanceof SyncTransport) {
             return new DefaultTransportAdapter($name, $receiver, 'sync');

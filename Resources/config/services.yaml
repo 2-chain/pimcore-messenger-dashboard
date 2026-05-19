@@ -7,7 +7,7 @@ services:
     TwoChain\PimcoreMessengerDashboardBundle\:
         resource: '../../*'
         exclude:
-            - '../../{DependencyInjection,Resources,Tests,Entity,Migrations}'
+            - '../../{DependencyInjection,Resources,tests,Entity,Migrations,vendor}'
             - '../../PimcoreMessengerDashboardBundle.php'
 
     TwoChain\PimcoreMessengerDashboardBundle\Installer:

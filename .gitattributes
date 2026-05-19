@@ -1,0 +1,25 @@
+# Normalize line endings in the repo.
+* text=auto eol=lf
+
+# Files marked `export-ignore` are stripped from the composer dist archive
+# (`git archive`). Customers running `composer require 2chain/pimcore-messenger-dashboard`
+# don't download these — keeps the installed package small.
+
+# Tests are only useful when developing the bundle itself.
+/tests              export-ignore
+/phpunit.xml.dist   export-ignore
+/.phpunit.cache     export-ignore
+
+# Repo metadata that has no value inside vendor/.
+/.gitignore         export-ignore
+/.gitattributes     export-ignore
+/.github            export-ignore
+
+# IDE / editor / agent state.
+/.idea              export-ignore
+/.vscode            export-ignore
+/.claude            export-ignore
+/CLAUDE.md          export-ignore
+
+# Lock file — irrelevant for downstream consumers.
+/composer.lock      export-ignore

@@ -15,7 +15,7 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
  *
  * Pimcore admins (User::isAdmin() === true) bypass both checks.
  */
-final class PermissionChecker
+class PermissionChecker
 {
     public function canView(?User $user): bool
     {

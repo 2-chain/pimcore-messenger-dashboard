@@ -59,7 +59,7 @@ final class PruneStatsCommand extends Command
         $io->writeln(sprintf('Pruning stats rows with handled_at < <info>%s</info>', $cutoff->format('Y-m-d H:i:s')));
 
         if ($input->getOption('dry-run')) {
-            $count = $this->countOlderThan($cutoff);
+            $count = $this->repository->countOlderThan($cutoff);
             $io->success(sprintf('[dry-run] %d row(s) would be deleted.', $count));
 
             return Command::SUCCESS;
@@ -69,15 +69,5 @@ final class PruneStatsCommand extends Command
         $io->success(sprintf('Deleted %d row(s).', $deleted));
 
         return Command::SUCCESS;
-    }
-
-    private function countOlderThan(\DateTimeImmutable $cutoff): int
-    {
-        $conn = $this->repository->getEntityManager()->getConnection();
-
-        return (int) $conn->fetchOne(
-            'SELECT COUNT(*) FROM messenger_dashboard_stats WHERE handled_at < ?',
-            [$cutoff->format('Y-m-d H:i:s')],
-        );
     }
 }
