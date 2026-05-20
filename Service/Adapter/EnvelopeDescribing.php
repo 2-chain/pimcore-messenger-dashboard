@@ -70,7 +70,8 @@ trait EnvelopeDescribing
     protected function envelopeToDescriptor(Envelope $envelope, ?DateTimeImmutable $createdAtOverride = null): MessageDescriptor
     {
         $idStamp = $envelope->last(TransportMessageIdStamp::class);
-        $id = $idStamp instanceof StampInterface ? (string) $idStamp->getId() : '';
+        $rawStampId = $idStamp instanceof TransportMessageIdStamp ? $idStamp->getId() : null;
+        $id = \is_scalar($rawStampId) ? (string) $rawStampId : '';
 
         $redelivery = $envelope->last(RedeliveryStamp::class);
         $manualRequeues = $envelope->last(DashboardRequeueCountStamp::class);

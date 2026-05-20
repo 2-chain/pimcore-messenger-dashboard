@@ -77,7 +77,11 @@ final class TwoChainMessengerDashboardExtension extends Extension implements Pre
 
         // Skip if user already set framework.messenger.failure_transport.
         foreach ($container->getExtensionConfig('framework') as $frameworkConfig) {
-            if (isset($frameworkConfig['messenger']['failure_transport'])) {
+            if (!\is_array($frameworkConfig)) {
+                continue;
+            }
+            if (isset($frameworkConfig['messenger']) && \is_array($frameworkConfig['messenger'])
+                && isset($frameworkConfig['messenger']['failure_transport'])) {
                 return;
             }
         }

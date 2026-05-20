@@ -35,10 +35,12 @@ class StatsRecordRepository extends ServiceEntityRepository implements StatsReco
      */
     public function countOlderThan(DateTimeImmutable $before): int
     {
-        return (int) $this->getEntityManager()->getConnection()->fetchOne(
+        $raw = $this->getEntityManager()->getConnection()->fetchOne(
             'SELECT COUNT(*) FROM messenger_dashboard_stats WHERE handled_at < ?',
             [$before->format('Y-m-d H:i:s')],
         );
+
+        return \is_numeric($raw) ? (int) $raw : 0;
     }
 
     /**
@@ -72,7 +74,7 @@ class StatsRecordRepository extends ServiceEntityRepository implements StatsReco
             'SELECT MAX(handled_at) FROM messenger_dashboard_stats WHERE transport = ?',
             [$transport],
         );
-        if ($row === false || $row === null) {
+        if ($row === false || $row === null || !\is_scalar($row)) {
             return null;
         }
 
@@ -95,9 +97,9 @@ class StatsRecordRepository extends ServiceEntityRepository implements StatsReco
 
         $out = ['handled' => 0, 'failed' => 0];
         foreach ($rows as $r) {
-            $status = (string) $r['status'];
+            $status = isset($r['status']) && \is_scalar($r['status']) ? (string) $r['status'] : '';
             if ($status === 'handled' || $status === 'failed') {
-                $out[$status] = (int) $r['n'];
+                $out[$status] = isset($r['n']) && \is_numeric($r['n']) ? (int) $r['n'] : 0;
             }
         }
 

@@ -141,6 +141,48 @@ jobs:
         run: vendor/bin/phpunit --testsuite integration
 
   # ---------------------------------------------------------------------------
+  # Coverage: re-runs the unit + integration suites on PHP 8.3 with pcov +
+  # uploads to Codecov. Uses SQLite (the default integration DSN) — MariaDB
+  # adds no extra line coverage, only SQL-dialect coverage already enforced
+  # by `test-mariadb`. Functional tests are skipped here.
+  # ---------------------------------------------------------------------------
+  coverage:
+    name: Coverage (unit + integration, PHP 8.3)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3 with pcov
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: bcmath, exif, gd, intl, pdo_mysql, pdo_sqlite, redis, zip
+          # pcov is ~10× faster than xdebug for line-coverage collection.
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          composer-options: --prefer-dist --no-progress
+
+      - name: Run unit + integration tests with coverage
+        run: |
+          vendor/bin/phpunit \
+            --testsuite unit,integration \
+            --coverage-clover coverage.xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          # Public repos don't need a token; this stays unset until the repo
+          # is configured at codecov.io. Once linked, set CODECOV_TOKEN in
+          # the repo secrets and uncomment:
+          # token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
+  # ---------------------------------------------------------------------------
   # Aggregator job: a single green check for branch protection to require.
   # Without this, branch protection would need to list every matrix entry
   # individually (9 SQLite × 2 MariaDB = 11 separate check names).
@@ -152,7 +194,7 @@ jobs:
   ci-passed:
     name: All required checks passed
     runs-on: ubuntu-latest
-    needs: [quality, test, test-mariadb]
+    needs: [quality, test, test-mariadb, coverage]
     if: always()
     steps:
       - name: Verify upstream jobs succeeded
@@ -167,6 +209,10 @@ jobs:
           fi
           if [[ "${{ needs.test-mariadb.result }}" != "success" ]]; then
             echo "::error::MariaDB integration tests did not succeed (result: ${{ needs.test-mariadb.result }})"
+            exit 1
+          fi
+          if [[ "${{ needs.coverage.result }}" != "success" ]]; then
+            echo "::error::Coverage job did not succeed (result: ${{ needs.coverage.result }})"
             exit 1
           fi
           echo "All required checks passed."

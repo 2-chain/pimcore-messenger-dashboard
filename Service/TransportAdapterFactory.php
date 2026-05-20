@@ -18,6 +18,7 @@ use Symfony\Component\Messenger\Transport\InMemory\InMemoryTransport;
 use Symfony\Component\Messenger\Transport\Receiver\ListableReceiverInterface;
 use Symfony\Component\Messenger\Transport\Receiver\ReceiverInterface;
 use Symfony\Component\Messenger\Transport\Sync\SyncTransport;
+use LogicException;
 
 /**
  * Resolves a Symfony Messenger transport name to the right adapter. The
@@ -43,6 +44,9 @@ final class TransportAdapterFactory
             return $this->cache[$name];
         }
         $receiver = $this->receiverLocator->get($name);
+        if (!$receiver instanceof ReceiverInterface) {
+            throw new LogicException(\sprintf('Receiver "%s" is not a ReceiverInterface', $name));
+        }
 
         return $this->cache[$name] = $this->resolve($name, $receiver);
     }

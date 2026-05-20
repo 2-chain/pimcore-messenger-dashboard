@@ -1,9 +1,9 @@
 # Pimcore Messenger Dashboard
 
 [![Latest Stable Version](https://img.shields.io/packagist/v/2chain/pimcore-messenger-dashboard.svg)](https://packagist.org/packages/2chain/pimcore-messenger-dashboard)
-[![Total Downloads](https://img.shields.io/packagist/dt/2chain/pimcore-messenger-dashboard.svg)](https://packagist.org/packages/2chain/pimcore-messenger-dashboard)
+[![CI](https://github.com/2-chain/pimcore-messenger-dashboard/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/2-chain/pimcore-messenger-dashboard/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/2-chain/pimcore-messenger-dashboard/main.svg)](https://codecov.io/gh/2-chain/pimcore-messenger-dashboard)
 [![License](https://img.shields.io/packagist/l/2chain/pimcore-messenger-dashboard.svg)](LICENSE.md)
-[![PHP Version](https://img.shields.io/packagist/php-v/2chain/pimcore-messenger-dashboard.svg)](composer.json)
 
 A Pimcore admin dashboard for Symfony Messenger queues. View pending and failed
 messages across every configured transport, inspect message bodies, delete

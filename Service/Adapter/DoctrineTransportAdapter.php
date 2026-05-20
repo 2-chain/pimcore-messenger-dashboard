@@ -98,7 +98,9 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
         }
 
         try {
-            return (int) $access['conn']->fetchOne($sql, $params, $types);
+            $raw = $access['conn']->fetchOne($sql, $params, $types);
+
+            return \is_numeric($raw) ? (int) $raw : parent::countListable($query);
         } catch (Throwable) {
             return parent::countListable($query);
         }
@@ -123,7 +125,7 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
 
         $descriptors = [];
         foreach ($rows as $row) {
-            $body = (string) ($row['body'] ?? '');
+            $body = isset($row['body']) && \is_scalar($row['body']) ? (string) $row['body'] : '';
             if ($body === '') {
                 continue;
             }
@@ -138,7 +140,8 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
             // carrying the DB row id when it returns envelopes; raw-body
             // deserialization bypasses that, so the id has to be re-attached
             // here or descriptors come back with id = "".
-            $envelope = $envelope->with(new TransportMessageIdStamp((string) $row['id']));
+            $rowId = isset($row['id']) && \is_scalar($row['id']) ? (string) $row['id'] : '';
+            $envelope = $envelope->with(new TransportMessageIdStamp($rowId));
             $descriptors[] = $this->envelopeToDescriptor($envelope, $this->parseCreatedAt($row['created_at'] ?? null));
         }
 
@@ -313,7 +316,10 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
         foreach ($envelopes as $envelope) {
             $stamp = $envelope->last(TransportMessageIdStamp::class);
             if ($stamp !== null) {
-                $ids[] = (string) $stamp->getId();
+                $rawId = $stamp->getId();
+                if (\is_scalar($rawId)) {
+                    $ids[] = (string) $rawId;
+                }
             }
         }
         if ($ids === []) {
@@ -332,7 +338,8 @@ final class DoctrineTransportAdapter extends ListableReceiverAdapter
         $map = [];
         foreach ($rows as $row) {
             $value = $row['created_at'] ?? null;
-            $id = (string) ($row['id'] ?? '');
+            $rawRowId = $row['id'] ?? null;
+            $id = \is_scalar($rawRowId) ? (string) $rawRowId : '';
             if (!is_string($value) || $value === '' || $id === '') {
                 continue;
             }

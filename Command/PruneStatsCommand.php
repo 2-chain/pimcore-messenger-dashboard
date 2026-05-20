@@ -50,7 +50,8 @@ final class PruneStatsCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $retentionDays = (int) ($input->getOption('retention-days') ?? $this->defaultRetentionDays);
+        $rawRetention = $input->getOption('retention-days') ?? $this->defaultRetentionDays;
+        $retentionDays = \is_numeric($rawRetention) ? (int) $rawRetention : $this->defaultRetentionDays;
         if ($retentionDays < 1) {
             $io->error(sprintf('retention-days must be >= 1, got %d', $retentionDays));
 

@@ -151,9 +151,9 @@ final class RedisTransportAdapter implements TransportAdapterInterface
         if ($access === null) {
             return false;
         }
-        $deleted = (int) $this->callRedis($access['client'], 'xDel', [$access['stream'], [$id]]);
+        $rawDeleted = $this->callRedis($access['client'], 'xDel', [$access['stream'], [$id]]);
 
-        return $deleted > 0;
+        return \is_numeric($rawDeleted) && ((int) $rawDeleted) > 0;
     }
 
     #[Override]

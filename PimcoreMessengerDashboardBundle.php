@@ -60,7 +60,14 @@ final class PimcoreMessengerDashboardBundle extends AbstractPimcoreBundle implem
     #[Override]
     public function getInstaller(): ?InstallerInterface
     {
-        return $this->container->get(Installer::class);
+        if ($this->container === null) {
+            return null;
+        }
+
+        $installer = $this->container->get(Installer::class);
+        \assert($installer instanceof InstallerInterface);
+
+        return $installer;
     }
 
     #[Override]

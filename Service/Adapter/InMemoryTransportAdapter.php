@@ -171,7 +171,11 @@ final class InMemoryTransportAdapter implements TransportAdapterInterface
     private function envelopeId(Envelope $envelope): string
     {
         $stamp = $envelope->last(TransportMessageIdStamp::class);
+        if ($stamp === null) {
+            return '';
+        }
+        $rawId = $stamp->getId();
 
-        return $stamp !== null ? (string) $stamp->getId() : '';
+        return \is_scalar($rawId) ? (string) $rawId : '';
     }
 }

@@ -100,11 +100,14 @@ final readonly class AmqpTransportAdapter implements TransportAdapterInterface
         $prop = $reflection->getProperty('connection');
         $connection = $prop->getValue($this->receiver);
 
+        if (!\is_object($connection)) {
+            throw new LogicException('AMQP adapter cannot reach a valid connection object to purge.');
+        }
         if (!method_exists($connection, 'queue')) {
             throw new LogicException('AMQP connection does not expose queue() — purge unavailable.');
         }
         $queue = $connection->queue($this->name);
-        if (!method_exists($queue, 'purge')) {
+        if (!\is_object($queue) || !method_exists($queue, 'purge')) {
             throw new LogicException('AMQP queue does not expose purge().');
         }
 
